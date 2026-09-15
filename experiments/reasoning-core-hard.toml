@@ -8,9 +8,9 @@
 # This mirrors experiments/reasoning-core.toml arm for arm, on the `-hard` families instead. The harder tier
 # raises difficulty on both generators — regex level 5 (deeper nesting of capturing and non-capturing groups,
 # escaped metacharacter and literal classes, `\B` anchors, and patterns whose whole body is optional) and grammar
-# level 3 with an eight-to-fourteen-token required derivation (longer valid members) — so the unaided first-sight
+# level 3 with a ten-to-sixteen-token required derivation (longer valid members) — so the unaided first-sight
 # ceiling sits below the moderate tier's, which is where the strict pool separates. The tier is
-# `HARD = Tier(regex_level=5, cfg_level=3, cfg_tokens=(8, 14), …)` (suite/families/_reasoning_core.py); its
+# `HARD = Tier(regex_level=5, cfg_level=3, cfg_tokens=(10, 16), …)` (suite/families/_reasoning_core.py); its
 # instances are pinned in suite/data/reasoning-core-hard.jsonl (twelve regex, twelve cfg) on seed bases disjoint
 # from the moderate tier.
 #
@@ -26,7 +26,7 @@
 #
 # The seed store experiments/seeds/reasoning-core-hard encodes the harder tier's method decisions — the same
 # produce-and-verify method as the moderate seed, with the level-specific facts rewritten for regex level 5 and
-# grammar level 3 at the eight-to-fourteen-token window. Its seeded twins are wired below.
+# grammar level 3 at the ten-to-sixteen-token window. Its seeded twins are wired below.
 #
 # Ids are W&B Inference ids as listed on 2026-09-13; `hgi experiment models` lists today's.
 name = "reasoning-core-hard"

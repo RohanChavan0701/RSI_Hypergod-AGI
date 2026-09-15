@@ -24,7 +24,7 @@ instance is kept within, and the seed bases each generator's instances draw
 from, into one :class:`Tier` value, so a harder tier is a config value passed
 to :func:`records`, not a fork of the generation code. Two are defined:
 :data:`MODERATE` (regex level 3, grammar level 2, six-to-twelve-token
-witnesses) and :data:`HARD` (regex level 5, grammar level 3, eight-to-fourteen-
+witnesses) and :data:`HARD` (regex level 5, grammar level 3, ten-to-sixteen-
 token witnesses), on disjoint seed bases so their instances never overlap.
 Generation is made reproducible against that revision:
 ``gramforge.generate`` reseeds Python's RNG from entropy on every call
@@ -126,10 +126,10 @@ MODERATE = Tier(name="moderate", regex_level=3, cfg_level=2, cfg_tokens=(6, 12),
 """The moderate tier pinned in ``reasoning-core.jsonl``: patterns with alternation, groups, counts and
 anchors; grammar sentences of six to twelve terminals over small grammars."""
 
-HARD = Tier(name="hard", regex_level=5, cfg_level=3, cfg_tokens=(8, 14),
+HARD = Tier(name="hard", regex_level=5, cfg_level=3, cfg_tokens=(10, 16),
             regex_seed_base=40_250_918, cfg_seed_base=50_250_918)
 """The harder tier pinned in ``reasoning-core-hard.jsonl``: deeper-nested patterns (more nesting,
-backreferences, escaped literals, ``\\B`` anchors) and larger grammars whose members run eight to fourteen
+backreferences, escaped literals, ``\\B`` anchors) and larger grammars whose members run ten to sixteen
 terminals, on seed bases disjoint from :data:`MODERATE` so the two tiers share no instance."""
 
 FAKER_SEED = 0

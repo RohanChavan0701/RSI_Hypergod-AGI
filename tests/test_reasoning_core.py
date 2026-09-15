@@ -135,13 +135,13 @@ HARD_REGEX_MATCHES = ("financia", "financial", "Tfinancia")  # optional T?, the 
 HARD_REGEX_NON_MATCHES = ("financi", "financiaX", "")
 
 HARD_CFG_ID = "reasoning-core-hard/cfg_00"
-"""One pinned harder grammar task: a bracket-nested ``'black'`` followed by a chain of ``'old'``, floor nine tokens."""
-HARD_CFG_MEMBER = "black old old old old old old old old"  # nine tokens; base `C -> 'black'` then `B -> B 'old'` eight times
-HARD_CFG_NON_MEMBERS = ("black", "black old", "[ [ black ] old old old old old")  # under the floor, or unbalanced brackets over it
+"""One pinned harder grammar task: a bracket-nested chain — ``[ … ]`` around ``< … >`` around a word, floor eleven tokens."""
+HARD_CFG_MEMBER = "[ [ [ < < about > > ] ] ]"  # eleven tokens; `S -> '[' S ']'` three deep around `B -> '<' B '>'` twice around `'about'`
+HARD_CFG_NON_MEMBERS = ("mother", "[ mother ]", "[ [ [ < < about > > ] ] mother")  # under the floor, or unbalanced brackets over it
 
 
 def test_the_hard_tier_config_matches_the_pinned_records():
-    assert rc.HARD.regex_level == 5 and rc.HARD.cfg_level == 3 and rc.HARD.cfg_tokens == (8, 14)
+    assert rc.HARD.regex_level == 5 and rc.HARD.cfg_level == 3 and rc.HARD.cfg_tokens == (10, 16)
     assert rc.MODERATE.regex_level == 3 and rc.MODERATE.cfg_level == 2 and rc.MODERATE.cfg_tokens == (6, 12)
     # disjoint seed bases: no instance is shared between the tiers
     assert rc.HARD.regex_seed_base != rc.MODERATE.regex_seed_base
@@ -156,7 +156,7 @@ def test_the_two_tiers_are_disjoint_and_the_hard_tier_is_harder():
     assert all(r["level"] == 5 for r in hard_recs if r["kind"] == "regex-following"), "harder regex is level 5"
     assert all(r["level"] == 3 for r in hard_recs if r["kind"] == "cfg-generation"), "harder grammar is level 3"
     # the harder grammar tier's window floor forces a longer valid derivation than the moderate tier's floor
-    assert min(r["min_tokens"] for r in hard_recs if r["kind"] == "cfg-generation") >= 8
+    assert min(r["min_tokens"] for r in hard_recs if r["kind"] == "cfg-generation") >= 10
 
 
 def test_hard_families_load_the_same_pinned_instances_one_call_apart():
@@ -204,7 +204,7 @@ def test_a_hard_cfg_task_is_satisfiable_and_grades_by_membership_over_the_floor(
     spec = _by_id("reasoning-core-hard")[HARD_CFG_ID]
     record = next(r for r in FAMILIES["reasoning-core-hard"].records() if f"reasoning-core-hard/{r['id']}" == HARD_CFG_ID)
     assert record["start"] in spec.prompt and str(record["min_tokens"]) in spec.prompt
-    assert record["min_tokens"] == 9, "the pinned harder floor for this instance"
+    assert record["min_tokens"] == 11, "the pinned harder floor for this instance"
     assert spec.check(HARD_CFG_MEMBER, tmp_path), "a string the grammar derives at the harder floor must pass"
     for bad in HARD_CFG_NON_MEMBERS:
         assert not spec.check(bad, tmp_path), f"{bad!r} is under the floor or not derivable and must fail"

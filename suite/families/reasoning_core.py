@@ -125,7 +125,7 @@ def _task(record: dict[str, Any], fam: str) -> Task:
 
 
 HARD_SOURCE = (f"sileod/reasoning-core ({rc.LICENSE}, rev {rc.REVISION[:7]}, v{rc.VERSION}, {rc.PAPER}); "
-               "the harder tier — regex level 5, grammar level 3, eight-to-fourteen-token grammar members — "
+               "the harder tier — regex level 5, grammar level 3, ten-to-sixteen-token grammar members — "
                "graded by the generator's own checker (regex.fullmatch; NLTK Earley membership)")
 
 

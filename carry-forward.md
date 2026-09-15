@@ -1631,6 +1631,12 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
       the cliff warns of.
     - **The other `-hard` arms remain unrun** (item 62): `20b-attached`, the strict
       and seeded twins, and the detached-strict control.
+    - **The seed store is now stale relative to the raised floor** (decision 100).
+      `experiments/seeds/reasoning-core-hard` is authored for the old `(8,14)`
+      window; its window numbers and instance-specific counts ("nine of twelve
+      grammars", "the twelve pinned patterns") must be re-verified and re-authored
+      for `(10,16)` before the `qwen-seeded`/`qwen-strict-seeded` twins run. The
+      plain arms do not use the seed.
 
 ## Housekeeping
 

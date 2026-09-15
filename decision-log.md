@@ -1367,3 +1367,35 @@ number); it is kept as authored so the cross-references stay valid.
     discipline lives in the prompt, so a model that returns one narrow label
     degenerates to the old behavior. All of it is offline/stub-tested; the live
     confirmation that a genuine method now recurs on the endpoint is owed.
+100. **Raise the reasoning-core hard floor via the grammar derivation window, not
+    a generator level** (item 66, 2026-09-15). `HARD.cfg_tokens` `(8, 14)` →
+    `(10, 16)` (`suite/families/_reasoning_core.py`); both generator levels stay
+    (regex 5, grammar 3). The pinned `reasoning-core-hard.jsonl` was re-fetched at
+    the new window (12 cfg instances regenerated, the 12 regex unchanged since the
+    regex level and seed base did not move), the durable text and the
+    instance-coupled tests followed (the new `cfg_00` is a bracket-nesting grammar
+    with an eleven-token floor). *Why this lever:* the item-66 re-run saturated at
+    24/24 on the stream — the actor solved every learning-pass task, so method
+    failures came only on the non-consolidating revisit and never reached coding;
+    item 65's "thin method signal at near-saturation" is the binding constraint, and
+    the run's actual failures were all `cfg` tasks, so the grammar floor is the
+    targeted knob. *Why the window, not a level:* item 47 names "a longer valid
+    derivation" as the grammar floor lever, and a window change keeps both levels, so
+    the seed store's level-specific method facts (D-0002's regex level-5 witness
+    rules, D-0003's leftmost-derivation method) stay valid — only token-count numbers
+    move; a `regex_level` or `cfg_level` bump would invalidate the seed's authored
+    facts. *Why it may be right:* it targets the generator that actually failed,
+    keeps the blast radius to a config value + re-fetch, and is reversible. *Why it
+    may not:* item 47's cfg cliff — `(8,14)`→0.33, `(10,18)`→0.17 — makes cfg a
+    knife-edge, and `(10,16)` sits near it; **item 47's absolute numbers are stale**
+    because item-63(3)'s repair turn post-dates them (it lifted `(8,14)` from a
+    calibrated ~0.33 to an observed ~1.0), so where `(10,16)` lands is unmeasured. A
+    scratch calibration pilot (per the **experiment-runner** skill) is owed before
+    the next billed `qwen-attached` run — watch for the ~0.17 floor effect where even
+    the store cannot lift the actor. *Owed:* the seed store
+    (`experiments/seeds/reasoning-core-hard`) is authored for the old `(8,14)` window
+    and is now stale relative to the raised floor — its window numbers and
+    instance-specific counts (e.g. "nine of twelve grammars") must be re-verified and
+    re-authored for `(10,16)` before the `qwen-seeded`/`qwen-strict-seeded` twins run.
+    The plain arms (attached, detached, strict, 20b) do not use the seed and run at
+    the new floor once calibrated.
