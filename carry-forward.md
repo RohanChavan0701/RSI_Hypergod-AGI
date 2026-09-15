@@ -1570,6 +1570,67 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
       untouched, correctly). The residual question is empirical: does the model
       actually attach a stable coarse label across distinct fine facts, or does the
       coarse label itself drift? That is what the endpoint run measures.
+66. **The item-65 `qwen-attached` re-run — the intake fix works where it fired,
+    but the stream saturates and the method failures land where nothing
+    consolidates; the floor is raised in answer** (2026-09-15, fresh `--force
+    --no-commit` run on the committed item-63/64 tree `b8e22df`; store under
+    gitignored `runs/reasoning-core-hard/qwen-attached/`). Clean run (W&B auth,
+    Weave, the item-53 `nltk`/`regex` shell preflight all passed; no pass-4 crash
+    — the item-60 `adopt_shapes` fix held). Curve `1.0 1.0 1.0 1.0 1.0 1.0 | 1.0
+    0.75` (revisit), stream **24/24**, **0 records admitted**. The result is an
+    experiment-saturation finding, not a pipeline defect:
+    - **The stream (passes 1–6) was fully saturated** — `failed:0, observed:0` on
+      every consolidating pass. The three consolidations (K-0001/2/3 after passes
+      2/4/6) each nominated exactly one thing — an *ungrounded pass proposal* (e.g.
+      H-0001, "consolidate all verification logic into the initial tool call to
+      avoid redundant execution") — and correctly **refused it at the independence
+      floor** (`refused_floor:1`, 0 sessions of evidence vs bar 2). Empty piles
+      produced no phantom decisions; the pipeline behaved.
+    - **The only real method failures landed on the retention revisit (passes
+      7–8), which by design does not consolidate** — so the three observations
+      minted there were never coded, grouped, or adjudicated (`shape:[]`, open,
+      stranded). No K-0004.
+    - **The three observations, against the intake fix (item 63):** O-0001 (cfg_10)
+      is a *clean produce-and-verify method fact* — "the first shell call failed
+      with a non-transient NLTK parsing error because the script passed a nested
+      list of tokens to the parser instead of a flat list" — the item-63 intake
+      edit working live, where item 60 would have said "exceeded the 2-shell-call
+      budget". O-0002 (cfg_09) names the real NLTK method error in `happened` but
+      its `turned_on` still drifts to budget (partial). O-0003 (cfg_09) is an
+      exogenous turn-limit harness symptom (a miss, though the downstream artifact
+      of the same over-verification). So intake is materially better than item 60
+      (which was budget-only) but not clean on the harder cfg_09.
+    - **Falsifier scorecard (item 59):** *negative transfer* — **GREEN** (batch-2's
+      1.0→0.75 re-meet is with an **empty store**, actor-alone variance; item 60's
+      sharp 1.0→0.25 did not recur). *Method-over-environment*, *ripeness surfaces
+      the method*, *corroboration-not-mint* — **not reached** (0 admits; coding
+      never ran on the stranded observations). *Non-elicitation visible* — **N/A**
+      (no empty-reply failures). The intake layer is confirmed; the
+      coding→grouping→decision path is untested on the endpoint because nothing
+      failed during a consolidating pass.
+    - **Two standing gaps this surfaces.** (a) *Structural:* method failures that
+      emerge only on the retention revisit are minted as observations but never
+      consolidated — late-emerging signal is invisible to learning. If the revisit
+      is purely a retention probe, that is by-design, but the observations sit
+      stranded. (b) *Telemetry:* the item-63(B) health-coverage undercount
+      reproduced — O-0001 sits on a *recovered/passing* row (pass 7 was 1.0) filed
+      through the non-failed-row path, so `coverage.observed` read 0 while the
+      observation exists; the two intake streams still diverge.
+    - **The binding constraint is item-65's "thin method signal at near-saturation",
+      now measured sharply:** 24/24 on the stream, and item-63(3)'s repair turn on
+      non-JSON final replies likely *compounds* it by recovering would-be failures
+      into passes. **Answer:** the difficulty floor is raised (decision 100, the
+      next commit) — `HARD.cfg_tokens` `(8,14)`→`(10,16)`, the item-47 "longer valid
+      derivation" lever on the generator the actor actually failed on (cfg), levels
+      unchanged so the seed's level-specific method facts stay valid. **Owed before
+      the next billed run:** a scratch calibration pilot — item 47's absolute cfg
+      numbers ((8,14)→0.33, (10,18)→0.17, a knife-edge) are **stale** because the
+      repair turn post-dates them and lifted (8,14) to ~1.0, so where (10,16) lands
+      is unmeasured and must be piloted to scratch (per the **experiment-runner**
+      skill) before spending `qwen-attached` again. Watch for the 0.17 floor effect
+      the cliff warns of.
+    - **The other `-hard` arms remain unrun** (item 62): `20b-attached`, the strict
+      and seeded twins, and the detached-strict control.
 
 ## Housekeeping
 
