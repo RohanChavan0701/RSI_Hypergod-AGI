@@ -207,20 +207,19 @@ def _coding(req):
 
 @handles("cluster")
 def _cluster(req):
-    # Group observations by the convention their `happened` names: a registered convention term when one fits, else the
-    # way-of-working lesson the text turns on (other(<lesson>)), else other(unclassified). Distinct conventions fall in
-    # distinct clusters even when the same tool is behind them — the shape is the convention, never the tool.
-    groups: dict[str, list[str]] = {}
+    # Multi-shape (item 64): each observation gets a *set* of convention labels — every registered convention its
+    # `happened` names, else the way-of-working lesson it turns on (other(<lesson>)), else other(unclassified). The stub
+    # multi-selects rather than collapsing to one label, so an observation whose world-fact names two conventions carries
+    # both and groups under each; grouping is per-label downstream. The shape is the convention, never the tool.
+    shapes: dict[str, list[str]] = {}
     for o in req["observations"]:
         text = o.get("happened") or o.get("noticed") or ""
-        conv = conventions_for(text, req["terms"])
-        if conv:
-            label = sorted(conv)[0]
-        else:
+        labels = sorted(conventions_for(text, req["terms"]))
+        if not labels:
             key = lesson_key([text])
-            label = f"other({key})" if key else "other(unclassified)"
-        groups.setdefault(label, []).append(o["name"])
-    return {"clusters": [{"convention": label, "observations": names} for label, names in groups.items()]}
+            labels = [f"other({key})" if key else "other(unclassified)"]
+        shapes[o["name"]] = labels
+    return {"shapes": shapes}
 
 
 # --- the consolidator ---------------------------------------------------------------------

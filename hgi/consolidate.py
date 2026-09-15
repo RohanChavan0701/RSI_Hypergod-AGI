@@ -86,24 +86,42 @@ def _convention_label(store: Store, label: str) -> str:
         return f"other({label})"
 
 
-def _demote_pool_universal(resolved: list[tuple[str, list[Observation]]], total: int) -> list[tuple[str, list[Observation]]]:
-    """A convention carried by at least :data:`POOL_UNIVERSAL_FRACTION` of the grouped instances *while distinct
-    conventions exist beside it* is pool-universal: it means nothing and must not dominate grouping, so its cluster is
-    broken back into singletons (carry-forward item 57 — the guard the ``work-shape`` hooks carry, :func:`pool_universal_terms`,
-    extended to the open grouping axis).
+def _demote_presentation_universal(store: Store, by_label: dict[str, list[Observation]]) -> dict[str, list[Observation]]:
+    """A grouping label whose cluster is keyed on a *presentation*-universal work-shape — a term (essentially) every task
+    presents, like a call budget — anchors nothing as a grouping identity and must not dominate the axis, so it is
+    demoted: dropped as a grouping key, its members kept under their other labels (carry-forward item 64, the crux).
 
-    Conservative in two ways: it fires only over a pool of two or more instances, and only when the pool holds more than
-    one cluster — a pool whose every instance genuinely shares one convention is one real recurrence, not a shape drowning
-    others, so it is kept."""
-    if total < 2 or len(resolved) < 2:
-        return resolved
-    out: list[tuple[str, list[Observation]]] = []
-    for label, members in resolved:
-        if len(members) > 1 and len(members) / total >= POOL_UNIVERSAL_FRACTION:
-            out.extend((label, [o]) for o in members)
-        else:
-            out.append((label, members))
-    return out
+    The measure is :func:`presentation_universality` over the cluster's members, **never raw frequency**. Under free
+    multi-select the coder attaches coarse labels liberally, so a coarse *method* label is carried by most of a homogeneous
+    stream (a ``produce-and-verify`` unifying ``module-not-found`` / ``grammar-parse`` / ``invalid-json``) — a raw-frequency
+    guard would demote exactly the coarse label the redundancy is meant to keep, re-creating the item-62 F1/F3 residue.
+    Budget is universal *on presentation* (every task presents a shell-call budget; item 60 saw it sink to ``pu = 1.0``); a
+    method label is frequent but not a presentation term. Demoting on presentation-universality sinks budget while keeping
+    the coarse method label — the difference between multi-shape amplifying budget and finally letting the method group.
+
+    Conservative exactly as the frequency guard was: a label is demoted only when it groups two or more observations and
+    the pool holds more than one label, so a pool whose every observation genuinely shares one presentation-keyed
+    convention is one real recurrence, kept. An observation left with no surviving group falls to an ``other(uncoded)``
+    singleton so it is never dropped."""
+    if len(by_label) < 2:
+        return dict(by_label)
+    call_shapes = _call_to_shapes(store)
+    universal = pool_universal_terms()
+    surviving: dict[str, list[Observation]] = {}
+    for label, members in by_label.items():
+        member_dicts = [{"anchor": o.anchor.model_dump()} for o in members]
+        if len(members) > 1 and universal and presentation_universality(member_dicts, call_shapes) >= POOL_UNIVERSAL_FRACTION:
+            continue  # demoted: a presentation-universal grouping label groups on what every task carries, not on the world
+        surviving[label] = members
+    covered = {o.name for members in surviving.values() for o in members}
+    for members in by_label.values():
+        for o in members:
+            if o.name not in covered:
+                singleton = surviving.setdefault("other(uncoded)", [])
+                if o.name not in {x.name for x in singleton}:
+                    singleton.append(o)
+                covered.add(o.name)
+    return surviving
 
 
 def _prior_escape_labels(store: Store, exclude: set[str]) -> dict[str, str]:
@@ -114,33 +132,42 @@ def _prior_escape_labels(store: Store, exclude: set[str]) -> dict[str, str]:
     carried. ``exclude`` is the current open pool — unshaped this pass, so never a prior labeling of itself."""
     prior: dict[str, str] = {}
     for o in sorted(store.all("observation"), key=lambda o: (o.noticed_at, o.name)):  # type: ignore[attr-defined]
-        if o.name in exclude or not o.shape or not is_escape(o.shape[0]):  # type: ignore[attr-defined]
+        if o.name in exclude or not o.shape:  # type: ignore[attr-defined]
             continue
-        prior.setdefault(_index.world_content_key(o.happened), o.shape[0])  # type: ignore[attr-defined]
+        key = _index.world_content_key(o.happened)  # type: ignore[attr-defined]
+        for esc in o.shape:  # a world-fact keeps the first escape *any* round shaped it with (item 64: shape is now a set)  # type: ignore[attr-defined]
+            if is_escape(esc):
+                prior.setdefault(key, esc)
+                break
     return prior
 
 
-def _canonical_label(label: str, members: list[Observation], prior: dict[str, str]) -> str:
-    """A cluster's label canonicalized to the escape the same world-fact first carried, so one world-fact keeps one label
-    across rounds (carry-forward item 61: the coder naming one happenstance ``other(call-budget-exceeded)`` one round and
-    ``other(pool-exhausted)`` the next forked the axis and let the consolidator mint a twin).
+def _canonical_escape(label: str, o: Observation, prior: dict[str, str]) -> str:
+    """An escape label canonicalized to the escape the same world-fact first carried in an earlier pass, so one world-fact
+    keeps one escape name across rounds (carry-forward item 61: the coder naming one happenstance ``other(call-budget-exceeded)``
+    one round and ``other(pool-exhausted)`` the next forked the axis and let the consolidator mint a twin).
 
-    Fires only escape→escape: the cluster's label is an escape, its members' *modal* world-content key was first shaped
-    with a *different* escape, and that prior escape is adopted. A registered term — the coder's or the prior's — is left
-    untouched; a world-fact that quotes no literal keys on its normalized sentence, so distinct sentences never merge."""
+    Fires only escape→escape, on this observation's own world-content key: a registered term — the coder's or the prior's —
+    is left untouched, and a world-fact that quotes no literal keys on its normalized sentence so distinct sentences never
+    merge. Secondary now to the coarse shared label, which does the cross-round merging by construction (item 64); kept so a
+    single world-fact's escape does not drift."""
     if not is_escape(label):
         return label
-    keys = Counter(_index.world_content_key(o.happened) for o in members)
-    modal = keys.most_common(1)[0][0] if keys else ""
-    canonical = prior.get(modal)
+    canonical = prior.get(_index.world_content_key(o.happened))
     return canonical if canonical and canonical != label and is_escape(canonical) else label
 
 
 def group_observations(store: Store, record: Consolidation) -> list[dict[str, Any]]:
-    """The blind coder clusters the open observations by the convention each turned on; each cluster's ``shape`` is a minted
-    ``convention`` label (a registered term or an ``other(<what>)`` escape) ratified against the raw ``happened``, never a
-    pre-picked enum joined by string equality. Same-convention observations group, with the independence qualifier applied
-    later; an observation the coder places in no cluster stands as its own singleton.
+    """The blind coder assigns each open observation a *set* of ``convention`` labels — the conventions it turned on — and
+    grouping is **per label**: a candidate cluster is every observation carrying label L, so one observation lives in
+    several clusters, each nominating on its own label's distinct-session independence (carry-forward item 64). Each label
+    is a minted ``convention`` (a registered term or an ``other(<what>)`` escape) ratified against the raw ``happened``,
+    never a pre-picked enum joined by string equality. The redundant coarse label — carried across tasks alongside a
+    specific one — is what lets a recurrence survive fine-wording drift the single-label axis forked into singletons.
+
+    Grouping is per shared label and never a transitive union-find (A~B on X, B~C on Y ⇒ A,B,C), which would collapse the
+    pool through a chain. One observation feeding two near-duplicate nominations is the dedup guard's to route to
+    corroboration (:func:`corroborates`), not two decisions.
 
     An observation a deferred draft already rests on is claimed until that
     draft is disposed — a deferred draft is not nominated twice from the same
@@ -149,8 +176,8 @@ def group_observations(store: Store, record: Consolidation) -> list[dict[str, An
 
     The rows the coder reads are score-stripped exactly as the eliciting brief is (:func:`hgi.close._world_facts`), so no
     series name reaches coding and the anti-over-keying discipline holds here too (carry-forward item 57, part 6). A
-    convention carried by (essentially) every grouped instance is pool-universal and cannot dominate grouping
-    (:func:`_demote_pool_universal`).
+    grouping label keyed on a presentation-universal work-shape — a term every task presents, like a call budget — is
+    demoted so it cannot dominate the axis (:func:`_demote_presentation_universal`).
     """
     from hgi.close import _world_facts  # the same score-strip the elicitation applies, reused here for the coder's rows
 
@@ -160,28 +187,25 @@ def group_observations(store: Store, record: Consolidation) -> list[dict[str, An
         return []
     rows_by_call = {call: _world_facts(row) for s in store.all("session") if s.attached and s.evaluation  # type: ignore[attr-defined]
                     for row in s.evaluation.rows if (call := row.get("call"))}  # type: ignore[attr-defined]
-    clusters, call = _coder.cluster([{"name": o.name, "happened": o.happened, "anchor": o.anchor.model_dump(exclude_none=True)} for o in open_obs],
-                                    store.registry.terms("convention"), rows=rows_by_call, session=record.id, records_in_context=[])
+    labels_by_name, call = _coder.cluster([{"name": o.name, "happened": o.happened, "anchor": o.anchor.model_dump(exclude_none=True)} for o in open_obs],
+                                          store.registry.terms("convention"), rows=rows_by_call, session=record.id, records_in_context=[])
     by_name = {o.name: o for o in open_obs}
     prior = _prior_escape_labels(store, exclude={o.name for o in open_obs})
-    resolved: list[tuple[str, list[Observation]]] = []
-    assigned: set[str] = set()
-    for cl in clusters:
-        members = [by_name[n] for n in cl["observations"] if n in by_name and n not in assigned]
-        if not members:
-            continue
-        assigned.update(o.name for o in members)
-        resolved.append((_canonical_label(_convention_label(store, cl["shape"]), members, prior), members))
-    for o in open_obs:  # an observation the coder placed in no cluster stands as its own singleton
-        if o.name not in assigned:
-            resolved.append(("other(uncoded)", [o]))
-    resolved = _demote_pool_universal(resolved, len(open_obs))
-    resolved.sort(key=lambda lm: (lm[0], sorted(o.name for o in lm[1])))
+    for o in open_obs:  # each observation's label set: valid convention Terms, escape-canonicalized per world-fact, deduped, never empty
+        labels: list[str] = []
+        for raw in labels_by_name.get(o.name) or []:
+            lab = _canonical_escape(_convention_label(store, raw), o, prior)
+            if lab not in labels:
+                labels.append(lab)
+        o.shape = sorted(labels) or ["other(uncoded)"]
+        store.write(o)
+    by_label: dict[str, list[Observation]] = defaultdict(list)  # per-label grouping, non-transitive: one observation → several clusters
+    for o in open_obs:
+        for lab in o.shape:
+            by_label[lab].append(by_name[o.name])
+    resolved = _demote_presentation_universal(store, by_label)
     out = []
-    for label, members in resolved:
-        for o in members:
-            o.shape = [label]
-            store.write(o)
+    for label, members in sorted(resolved.items(), key=lambda lm: (lm[0], sorted(o.name for o in lm[1]))):
         sessions = sorted({o.session for o in members})
         out.append(_grouped_cluster(label, call, members, sessions))
     return out

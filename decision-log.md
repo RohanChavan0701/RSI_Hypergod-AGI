@@ -1298,3 +1298,72 @@ number); it is kept as authored so the cross-references stay valid.
     *singletons over distinct world-facts* still never recurs, because those
     are different keys; whether cross-session keying should abstract across
     distinct world-facts is the still-open design question, left unforced.
+98. **The intake reads the world-fact through a way-of-working symptom, keeps a
+    budget refusal off the observation axis, and repairs a non-JSON final reply**
+    (item 63, the qwen-attached run's binding defect, 2026-09-15). The item-61/62
+    guards proved structurally sound on the endpoint, but every guard is downstream
+    of the *coding* step, and the run showed intake was the ceiling on relevance:
+    the actor over-verified until the budget refused a call and emitted a non-JSON
+    reply, and the close then filed the *budget refusal* — or the harness's
+    "final reply was not JSON" — as the world-fact, so the only thing that recurred
+    cross-session was budget, never the produce-and-verify method. Three intake
+    changes: (a) `hgi/roles/pass.md` and `coder.md` now tell the eliciting and
+    coding steps to read *through* a way-of-working symptom (a call-budget refusal,
+    a malformed reply, an error wrapper) to what the task was producing and whether
+    it satisfied the world — the budget/format symptom is `turned_on` at most, never
+    the `happened` a finding groups on (GCE §11.1, "a way of working turns on
+    itself, not on the world"); (b) `close._recovered_nontransient` no longer treats
+    a call-budget refusal as a fault a passing row "recovered from"
+    (`_is_budget_refusal`, keyed on the `"call budget of … exceeded"` cause), so
+    L-0009 stops minting an observation from a passing row whose only fault was
+    spending its budget — it is economy telemetry (`tool_budget_respected`), not a
+    convention; (c) `suite/agent.py` gives the model one bounded repair turn on a
+    non-JSON final reply (the sibling of decision/item-42's malformed-tool-call
+    recovery, for the answer) demanding the task's outcome, and splits the symptom
+    (a format failure that survived the repair reads apart by `cause`). *Right if:*
+    the ceiling on relevance was set entirely by what the coder read off the row, so
+    fixing intake is the highest-leverage change and it is offline-testable; a budget
+    refusal on a passing row is genuinely not a world-convention, and the repair turn
+    lets the true method outcome surface instead of the harness error masking it.
+    *Wrong if:* the hard tier stays near-saturation for the actor (only 2 of 20 rows
+    failed), so even a perfect intake has thin method signal to group — the harder
+    floor and a repair on the *final* answer may still leave too few genuine method
+    failures to recur; and the prompt changes are authored, not yet re-verified on
+    the endpoint (`priced_for` unchanged; a live re-run is owed). The budget-refusal
+    gate keys on the cause string `suite.tools` raises, so a reworded refusal would
+    slip past it (mitigated — the two are edited together).
+99. **Multi-shape observation coding: a set of convention labels per observation,
+    per-label grouping, and demotion on presentation-universality** (item 64, the
+    F1/F3 root, 2026-09-15). One label per observation was the wrong model: a method
+    that manifests as per-task singletons under drifting fine labels
+    (`other(module-not-found)`, `other(grammar-parse)`, `other(invalid-json)`) never
+    cleared the recurrence bar, and decision 97's per-world-fact canonicalization
+    could not help — those are genuinely distinct world-facts, not one fact drifting.
+    So the coder (`cluster`) now returns a *set* of labels per observation — a broad
+    convention shared across tasks and a specific one — `group_observations` groups
+    **per label** (a candidate cluster is every observation carrying label L, one
+    observation lives in several clusters), never a transitive union-find, and
+    `_demote_pool_universal` (raw frequency) is replaced by
+    `_demote_presentation_universal`: a grouping label is demoted only when its
+    cluster's *shared presentation* is pool-universal (item 58's
+    `presentation_universality`), never on how frequent the label is. No schema
+    migration — `Observation.shape` was already a list; the readers that assumed
+    `shape[0]` (`_prior_escape_labels`) now iterate the set, and `_canonical_label`
+    became the per-observation `_canonical_escape`, secondary now that the coarse
+    label does the cross-round merging. *Right if:* the redundancy is the fix — a
+    coarse shared label survives the fine-wording drift a single narrow label
+    scatters into singletons, and presentation-universality is the correct refusal:
+    budget is universal *on presentation* (its cluster spans every task-shape, so its
+    shared presentation collapses to the universal term alone → demoted), while a
+    coarse method label is frequent but keyed on a non-universal task-shape → kept.
+    Raw frequency would demote the very method label the redundancy exists to keep.
+    It maps universality to the presentation axis where §11.1 says it belongs and
+    retires the hand-crafted canonicalization. *Wrong if:* per-label grouping
+    multiplies candidate nominations, so the dedup guard (decision 97) must hold the
+    overlap — one observation feeding two near-duplicate nominations must route to
+    corroboration, not two decisions; the coder now judges multiple labels per
+    observation, trading one call's precision for coverage (guarded by the
+    blind-coder agreement control, decision 59); and the soft coarse+specific
+    discipline lives in the prompt, so a model that returns one narrow label
+    degenerates to the old behavior. All of it is offline/stub-tested; the live
+    confirmation that a genuine method now recurs on the endpoint is owed.

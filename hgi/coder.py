@@ -77,23 +77,27 @@ def code(observations: list[dict[str, Any]], terms: list[str], *, rows: dict[str
     return {k: list(v) for k, v in out.items()}, c.call
 
 
-def cluster(observations: list[dict[str, Any]], terms: list[str], *, rows: dict[str, dict[str, Any]] | None = None, **trace) -> tuple[list[dict[str, Any]], str | None]:
-    """Blind clustering: the coder proposes clusters over the raw anchored observations, each a convention it judges them
-    to share. Returns ``([{shape, observations}], call)`` — the shape a convention label minted from the cluster (a
-    registered ``convention`` term when one fits, else ``other(<what>)``), the observations the names it groups.
+def cluster(observations: list[dict[str, Any]], terms: list[str], *, rows: dict[str, dict[str, Any]] | None = None, **trace) -> tuple[dict[str, list[str]], str | None]:
+    """Blind multi-shape clustering: the coder assigns each raw anchored observation a *set* of convention labels — the
+    conventions it turned on — not one (carry-forward item 64). Returns ``({observation name: [labels]}, call)`` — each
+    label a registered ``convention`` term when one fits, else ``other(<what>)``. Grouping is then per-label
+    (:func:`hgi.consolidate.group_observations`): two observations group when they share a label, and one observation
+    lives in several candidate clusters.
 
-    Two observations group when the coder judges the same convention, ratified against the raw ``happened`` (and the
-    anchored row's ``result``/``commands`` when ``rows`` is given, :func:`coding_observations`), never against a pre-minted
-    term joined by string equality. An observation the coder places in no cluster is absent from the result; the caller
-    makes it its own singleton."""
+    The set carries a *broad* convention shared across tasks and a *specific* one, so a coarse recurrence survives the
+    fine-wording drift that forked the axis into singletons when each observation carried one narrow label (item 62's
+    F1/F3 residue). The labels are ratified against the raw ``happened`` (and the anchored row's ``result``/``commands``
+    when ``rows`` is given, :func:`coding_observations`), never a pre-minted term joined by string equality. An
+    observation the coder returns no label for is absent from the result; the caller makes it its own singleton."""
     payload = coding_observations(observations, rows) if rows is not None else observations
     c = _ask("cluster", observations=payload, terms=terms, **trace)
     out = c.json()
-    clusters = []
-    for cl in (out.get("clusters", []) if isinstance(out, dict) else []):
-        if not isinstance(cl, dict):
-            continue
-        names = [n for n in cl.get("observations", []) if isinstance(n, str)]
-        if names:
-            clusters.append({"shape": str(cl.get("convention") or "other(uncoded)"), "observations": names})
-    return clusters, c.call
+    shapes: dict[str, list[str]] = {}
+    raw = out.get("shapes", {}) if isinstance(out, dict) else {}
+    if isinstance(raw, dict):
+        for name, labels in raw.items():
+            if isinstance(name, str) and isinstance(labels, list):
+                picked = [str(l) for l in labels if isinstance(l, str) and str(l).strip()]
+                if picked:
+                    shapes[name] = picked
+    return shapes, c.call

@@ -7,7 +7,7 @@ into two clusters. Two mechanical guards close it, both keyed on the label-robus
 (:func:`hgi.index.world_content_key`), never on the fickle coder label:
 
 - **the grouping pass canonicalizes** a recurring escape label to the one the same world-fact first carried, so the axis
-  does not fork across rounds (:func:`hgi.consolidate._canonical_label`);
+  does not fork across rounds (:func:`hgi.consolidate._canonical_escape`, per observation over its world-content key);
 - **the consolidate loop routes** a ``new-decision`` draft resting only on world-facts an accepted decision already
   anchors to corroboration of that decision, never a twin mint (:func:`hgi.consolidate.corroborates`).
 """
@@ -143,7 +143,7 @@ def test_a_recurring_escape_keeps_the_label_its_world_fact_first_carried(store, 
     _shape_prior(store, BUDGET_A, "other(call-budget-exceeded)")  # round 1's label for the budget world-fact
     o_now = _observe(store, _session(store, 2, [FAULTED], {}), BUDGET_B)  # round 2, same world-fact
     # the coder drifts: it names the one happenstance a second way
-    monkeypatch.setitem(stub.HANDLERS, "cluster", lambda req: {"clusters": [{"convention": "other(pool-exhausted)", "observations": [o["name"] for o in req["observations"]]}]})
+    monkeypatch.setitem(stub.HANDLERS, "cluster", lambda req: {"shapes": {o["name"]: ["other(pool-exhausted)"] for o in req["observations"]}})
     _consolidate.group_observations(store, _record(store))
     assert store.observation(o_now.name).shape == ["other(call-budget-exceeded)"], "the drifted escape canonicalizes to the first label"
 
@@ -151,7 +151,7 @@ def test_a_recurring_escape_keeps_the_label_its_world_fact_first_carried(store, 
 def test_distinct_world_facts_are_not_merged(store, monkeypatch):
     _shape_prior(store, BUDGET_A, "other(call-budget-exceeded)")
     o_now = _observe(store, _session(store, 2, [FAULTED], {}), MODULE)  # a different world-fact
-    monkeypatch.setitem(stub.HANDLERS, "cluster", lambda req: {"clusters": [{"convention": "other(module-not-found)", "observations": [o["name"] for o in req["observations"]]}]})
+    monkeypatch.setitem(stub.HANDLERS, "cluster", lambda req: {"shapes": {o["name"]: ["other(module-not-found)"] for o in req["observations"]}})
     _consolidate.group_observations(store, _record(store))
     assert store.observation(o_now.name).shape == ["other(module-not-found)"], "a distinct world-fact keeps its own label"
 
@@ -161,6 +161,6 @@ def test_a_registered_prior_label_does_not_rewrite_an_escape(store, monkeypatch)
     by canonicalization — so a prior *registered* label leaves a fresh escape untouched."""
     _shape_prior(store, BUDGET_A, "listing-paged")  # a registered convention term (from the seed vocabulary)
     o_now = _observe(store, _session(store, 2, [FAULTED], {}), BUDGET_B)
-    monkeypatch.setitem(stub.HANDLERS, "cluster", lambda req: {"clusters": [{"convention": "other(pool-exhausted)", "observations": [o["name"] for o in req["observations"]]}]})
+    monkeypatch.setitem(stub.HANDLERS, "cluster", lambda req: {"shapes": {o["name"]: ["other(pool-exhausted)"] for o in req["observations"]}})
     _consolidate.group_observations(store, _record(store))
     assert store.observation(o_now.name).shape == ["other(pool-exhausted)"], "a registered prior does not override; the coder owns that promotion"

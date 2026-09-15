@@ -39,6 +39,15 @@ from hgi import tracing
 from suite.tools import ToolError, Tools
 
 MAX_TURNS = 8
+MAX_FINAL_REPAIRS = 1  # one bounded repair turn when the final reply is not the required JSON object; strictly capped so it can never loop
+
+# The corrective the repair turn sends: restate the output schema and, per item 63(C), demand the task's world-fact — what the
+# produced artifact actually was and whether it satisfied the task — not a description of a budget refusal or a formatting slip.
+FINAL_REPAIR = ("Your last reply was not the required output. Reply with exactly one JSON object and nothing else — no prose, no code "
+                "fence — matching the output schema: {\"result\": ..., \"error\": null | {\"message\": str, \"cause\": str}, \"applied\": "
+                "[record ids you applied]}. Put the task's actual outcome in `result`: what the artifact you produced was and whether it "
+                "satisfied the task. If the task genuinely failed, name its root cause in `error`. Do not report a budget refusal or a "
+                "formatting problem as the answer.")
 
 
 def _envelope(task: str, tools: Tools, *, result: Any = None, error: dict | None = None, applied: list[str] | None = None,
@@ -152,6 +161,7 @@ class Agent(weave.Model):
         user = f"Task {task}: {prompt}\nOutput schema: {json.dumps(schema)}" + (f"\nBudgets — {budgets}" if budgets else "")
         messages: list[dict[str, Any]] = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         malformed_tool_call = False
+        final_repairs = 0
         for turn in range(1, MAX_TURNS + 1):
             try:
                 reply, _ = _model.chat_with_tools("pass", messages, Tools.SCHEMA, session=self.session, pass_=self.pass_,
@@ -181,10 +191,24 @@ class Agent(weave.Model):
                 continue
             try:
                 final = _model.Completion(reply["content"], _model.model_id(), None).json()
+                bad = None if isinstance(final, dict) else "final reply was not a JSON object"
             except (ValueError, json.JSONDecodeError):
-                return _envelope(task, tools, error={"message": "final reply was not JSON", "cause": None}, turns=turn)
-            if not isinstance(final, dict):
-                return _envelope(task, tools, error={"message": "final reply was not a JSON object", "cause": None}, turns=turn)
+                bad = "final reply was not JSON"
+            if bad is not None:
+                # a malformed final answer is the sibling of the malformed-tool-call recovery above, but for the answer: on the
+                # reasoning-core hard tier the actor over-verifies until a budget refuses a call and then emits prose, and failing
+                # the row here immediately masks the world-fact (did the produced candidate match the pattern / belong to the
+                # grammar?). Give the model one bounded turn back to state that outcome as one JSON object; the retry consumes a
+                # turn from MAX_TURNS and is capped so it can never loop.
+                if final_repairs < MAX_FINAL_REPAIRS:
+                    final_repairs += 1
+                    messages.append({"role": "assistant", "content": reply["content"] or None})
+                    messages.append({"role": "user", "content": FINAL_REPAIR})
+                    continue
+                # the split symptom: a format failure that survived a repair reads apart from a first-shot one, without disturbing
+                # the message text downstream code matches on (hgi/stub.py IRREDUCIBLE, suite/lessons.py).
+                cause = "still not JSON after a repair turn" if bad == "final reply was not JSON" else "still not a JSON object after a repair turn"
+                return _envelope(task, tools, error={"message": bad, "cause": cause}, turns=turn)
             in_context = {r["id"] for r in self.records}
             applied = [a for a in (final.get("applied") or []) if isinstance(a, str) and a in in_context]  # a record not in context cannot have been applied
             return _envelope(task, tools, result=final.get("result"), error=final.get("error"), applied=applied, turns=turn)

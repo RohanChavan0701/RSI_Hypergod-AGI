@@ -258,10 +258,23 @@ def _artifact_subject(world, row: dict[str, Any], consulted: list[dict]) -> dict
             "row": _world_facts(row), "consulted": consulted}
 
 
+def _is_budget_refusal(error: dict[str, Any]) -> bool:
+    """A tool error that is a call-budget refusal (``suite.tools`` raises ``"<tool> call refused"`` with a
+    ``"call budget of N exceeded at call M"`` cause). A budget refusal is *economy telemetry* — it already feeds
+    ``tool_budget_respected`` — not a world-convention the attempt met or missed: the call was refused for spending, on
+    itself, not on the task's world (GCE §11.1, "a way of working turns on itself, not on the world"). So it is never a
+    fault a passed row "recovered from" and must stay off the observation axis (carry-forward item 63 part 2: passes 1–3
+    of the qwen-attached run minted four budget observations on rows that *passed* after over-verifying, and budget then
+    became the only thing that recurred cross-session)."""
+    return "call budget of" in (error.get("cause") or "")
+
+
 def _recovered_nontransient(row: dict[str, Any]) -> bool:
-    """A row that carries at least one non-transient tool error — a fault a retry could not have cleared, so a passed row
-    that carries one recovered from a real convention it first missed, not from a transient that cleared on retry."""
-    return any(not e.get("transient") for e in row.get("tool_errors", []))
+    """A row that carries at least one non-transient tool error the attempt *recovered from* — a real convention it first
+    missed, not a transient that cleared on retry and not a call-budget refusal. A budget refusal is non-transient but is
+    economy telemetry, not a recovered-from convention (:func:`_is_budget_refusal`), so L-0009 does not elicit an
+    observation from a passing row whose only fault was spending its budget (carry-forward item 63 part 2)."""
+    return any(not e.get("transient") and not _is_budget_refusal(e) for e in row.get("tool_errors", []))
 
 
 def lens_subjects(store: Store, session: Session, lens) -> dict[str, Any] | list[dict[str, Any]]:

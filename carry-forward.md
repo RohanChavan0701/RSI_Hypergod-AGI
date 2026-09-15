@@ -1527,6 +1527,49 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
     decision 59). All of it is offline/stub-testable — no endpoint, no migration —
     and is the natural companion to item 63's intake fix; sequence it after, since
     both touch `group_observations` and the coder contract.
+65. **Items 63 and 64 landed offline; what is lifted forward** (2026-09-15). The
+    intake fixes (item 63) and multi-shape coding (item 64) are implemented and the
+    reasoning recorded as decisions 98 and 99; the full suite is green (752 tests,
+    up from 742: the repair-turn tests, the two budget-refusal L-0009 tests, and
+    `tests/test_multi_shape_grouping.py`). What landed:
+    - **Item 63(1) — read through the symptom.** `hgi/roles/pass.md` and `coder.md`
+      now direct the eliciting and coding steps to state the task's world-fact, not
+      the budget refusal or the not-JSON error, when that is the visible symptom.
+    - **Item 63(2) — budget off the observation axis.** `close._recovered_nontransient`
+      excludes a call-budget refusal (`_is_budget_refusal`), so L-0009 no longer
+      files an observation from a passing row whose only fault was spending its
+      budget.
+    - **Item 63(3) — the repair turn.** `suite/agent.py` gives one bounded repair
+      turn on a non-JSON final reply and splits the symptom by `cause`.
+    - **Item 64 — multi-shape coding.** The coder assigns each observation a *set*
+      of convention labels (`cluster` → `{shapes: {name: [labels]}}`),
+      `group_observations` groups per-label (non-transitive), and
+      `_demote_presentation_universal` replaces the raw-frequency demotion.
+    Still open, lifted forward:
+    - **The live endpoint confirmation is owed** (billed, out of this offline
+      session's scope; load **experiment-runner**). A `qwen-attached` re-run of
+      `experiments/reasoning-core-hard.toml` is the confirmation that (i) the intake
+      now codes the produce-and-verify method rather than budget, (ii) the coarse
+      multi-shape label lets that method recur across distinct world-facts, and
+      (iii) the item-61/62 twin-close and the multi-shape dedup overlap both hold on
+      the endpoint (the item-62 live confirmation of the twin-close is still owed
+      from item 63(E)). The prompt edits are authored, not re-priced — `priced_for`
+      is unchanged; re-verify with `hgi roles try` (or `hgi price --reauthor`)
+      before the run.
+    - **Thin method signal at near-saturation** (item 63, *why it may not be
+      enough*). The hard tier failed only 2 of 20 rows for the actor, so even a
+      correct intake has little to group; a harder floor (item 63(C)'s repair on
+      the *final answer* is in, but a harder task floor is not) may be needed for
+      the method to fail often enough to recur.
+    - **The unrun `-hard` arms** (item 62). `20b-attached`, the strict and seeded
+      twins, and the detached-strict control of `experiments/reasoning-core-hard.toml`
+      remain unrun.
+    - **The F1/F3 abstract-keying question is now *answered by construction*, not
+      by a keying change.** Multi-shape lets a coarse label span distinct world-facts
+      without abstracting the world-content key itself (decision 97 left the key
+      untouched, correctly). The residual question is empirical: does the model
+      actually attach a stable coarse label across distinct fine facts, or does the
+      coarse label itself drift? That is what the endpoint run measures.
 
 ## Housekeeping
 
