@@ -1392,7 +1392,15 @@ number); it is kept as authored so the cross-references stay valid.
     calibrated ~0.33 to an observed ~1.0), so where `(10,16)` lands is unmeasured. A
     scratch calibration pilot (per the **experiment-runner** skill) is owed before
     the next billed `qwen-attached` run — watch for the ~0.17 floor effect where even
-    the store cannot lift the actor. *Owed:* the seed store
+    the store cannot lift the actor. **Measured (2026-09-15):** a scratch
+    `qwen-detached` pilot at `(10,16)` scored **23/24 (0.958)** first-sight (curve
+    `1.0×5 / 0.75`) — the lax pool is still saturated, the *opposite* end from the
+    0.17 cliff, because the actor fails on neither grammar hardness (it produces
+    valid members) nor, with item-63(3)'s repair turn, over-verification; the window
+    is **not the lever for the lax pool**. The strict pool (budget 1, no repair) is
+    the difficulty lever, and decision 100's window raise still *helps* it (harder
+    grammars → more wrong first candidates) — it is just insufficient for the lax
+    pool alone (carry-forward item 67). *Owed:* the seed store
     (`experiments/seeds/reasoning-core-hard`) is authored for the old `(8,14)` window
     and is now stale relative to the raised floor — its window numbers and
     instance-specific counts (e.g. "nine of twelve grammars") must be re-verified and

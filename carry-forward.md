@@ -1637,6 +1637,29 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
       grammars", "the twelve pinned patterns") must be re-verified and re-authored
       for `(10,16)` before the `qwen-seeded`/`qwen-strict-seeded` twins run. The
       plain arms do not use the seed.
+67. **Calibration: the `(10,16)` lax floor is still saturated — the window is not
+    the lever for the lax pool; the strict pool is** (2026-09-15, scratch
+    `qwen-detached` pilot on `openai`/`Qwen/Qwen3.6-35B-A3B`, `HGI_RUNS` under the
+    session scratchpad, `--no-commit`, store discarded). First-sight **23/24
+    (0.958)**, curve `1.0 1.0 1.0 1.0 1.0 0.75`, the one failure a wrong-answer row
+    (clean run, no harness fault). This confirms the item-66 reading: the actor
+    fails on **neither** grammar hardness (it produces valid grammar members
+    first-try) **nor** over-verification (item-63(3)'s repair turn recovers the
+    non-JSON failures that were the failure mode), so raising the grammar window
+    within the safe band (off item 47's `(10,18)`→~0.17 cliff) **cannot move the lax
+    pool**. **NO-GO for `qwen-attached` at this floor** — it would reproduce item
+    66's null result (no method failures during the consolidating passes). The
+    difficulty lever is the **strict pool** (`reasoning-core-hard-strict`, budget 1,
+    **no repair call**): a wrong first candidate cannot be repaired and fails on the
+    answer, which is where method signal comes from. Decision 100's window raise is
+    not wasted — harder grammars mean more wrong first candidates, which *helps the
+    strict pool* — it is just insufficient for the lax pool alone. **Next:** a
+    `qwen-strict-detached` scratch pilot at `(10,16)`; item 47 saw *moderate*
+    strict-detached at ~0.85–0.92 on Qwen, so the hard strict number is genuinely
+    unknown and is what the pilot measures. If it lands ~0.5, run
+    `qwen-strict-attached` (the seeded twin waits on the seed re-authoring, decision
+    100). If strict is *also* saturated, the lever is a different/weaker actor or a
+    higher generator level, not the window.
 
 ## Housekeeping
 
