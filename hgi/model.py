@@ -12,6 +12,13 @@ Backends:
   is configured by ``$HGI_INFERENCE_BASE_URL``, ``$HGI_INFERENCE_API_KEY`` and
   ``$HGI_MODEL_ID``; an experiment (:mod:`hgi.experiment`) installs it per
   role instead.
+- :class:`ClaudeCLI` — the local ``claude`` CLI, shelled out to per call and
+  billed to a Claude subscription instead of an inference endpoint. Selected
+  by ``$HGI_INFERENCE_BASE_URL=claude-cli://`` with ``$HGI_MODEL_ID`` naming
+  the CLI's model alias, or by a :class:`hgi.experiment.ModelSpec` with
+  ``provider = "claude-cli"``. A cost-offload path for the backward pass's
+  teacher roles, which carry most of a run's cost; every other spec is
+  unaffected.
 - :class:`Stub` — a deterministic answerer used when no endpoint is
   configured. It classifies work-shape lexically, answers every lens with the
   empty finding, and attacks and adjudicates by fixed rules stated in its
@@ -30,6 +37,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
+import subprocess
+import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Iterator
@@ -41,6 +51,9 @@ from hgi.roles import prompt as role_prompt
 
 WANDB_INFERENCE = "https://api.inference.wandb.ai/v1"
 """W&B Inference: OpenAI-compatible, keyed by the W&B API key, usage attributed to ``entity/project``."""
+
+CLAUDE_CLI_SENTINEL = "claude-cli://"
+"""The ``$HGI_INFERENCE_BASE_URL`` value that selects :class:`ClaudeCLI` instead of an OpenAI-compatible endpoint."""
 
 
 @dataclass
@@ -115,6 +128,55 @@ class OpenAICompatible(Backend):
         ]}
 
 
+class ClaudeCLI(Backend):
+    """The local ``claude`` CLI, one clean subprocess per call, billed to a Claude subscription rather
+    than an inference endpoint.
+
+    The system message becomes ``--system-prompt`` (replacing Claude Code's own primer entirely) and
+    the user message is the prompt argument. Each call runs from a fresh, empty ``tempfile.mkdtemp()``
+    directory with no ``CLAUDE.md`` up its tree, an empty ``--settings``, and ``--strict-mcp-config``
+    with an empty ``--mcp-config`` — so no project memory, skills, or MCP servers leak into the reply.
+    ``--output-format json`` wraps the reply in an envelope; the completion text is its ``result`` field.
+
+    This backend does not support tool-calling — the teacher roles it serves never pass ``tools`` — and
+    does not act on ``json_mode``: the role prompt itself states the JSON reply shape (:data:`hgi.roles.REPLY_RULE`).
+    """
+
+    def __init__(self, model: str = "sonnet", *, claude_bin: str | None = None, timeout: float = 300.0):
+        self.model_id = model
+        self.claude_bin = claude_bin or os.environ.get("HGI_CLAUDE_CLI_BIN") or "claude"
+        self.timeout = timeout
+        self.last_envelope: dict[str, Any] | None = None
+        """The most recent call's parsed envelope — usage, cost, latency — kept for inspection, not read by ``chat``."""
+
+    def chat(self, messages, *, json_mode, tools=None):
+        assert not tools, "ClaudeCLI does not support tool-calling"
+        system = next((m["content"] for m in messages if m.get("role") == "system"), "")
+        user = next((m["content"] for m in messages if m.get("role") == "user"), "")
+        cmd = [self.claude_bin, "-p", "--system-prompt", system, "--settings", "{}", "--strict-mcp-config",
+               "--mcp-config", '{"mcpServers": {}}', "--output-format", "json", "--model", self.model_id, user]
+        scratch = tempfile.mkdtemp(prefix="hgi-claude-cli-")
+        try:
+            proc = subprocess.run(cmd, cwd=scratch, capture_output=True, text=True, timeout=self.timeout)
+        except subprocess.TimeoutExpired as e:
+            raise RuntimeError(f"claude CLI timed out after {self.timeout}s: {e}") from e
+        except OSError as e:
+            raise RuntimeError(f"claude CLI ({self.claude_bin!r}) failed to start: {e}") from e
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+        try:
+            envelope = json.loads(proc.stdout)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"claude CLI returned an unparseable envelope (exit {proc.returncode}): "
+                                f"stdout={proc.stdout[:2000]!r} stderr={proc.stderr[:2000]!r}") from e
+        if proc.returncode != 0 or envelope.get("is_error"):
+            raise RuntimeError(f"claude CLI failed (exit {proc.returncode}): {envelope.get('result') or proc.stderr or envelope}")
+        if "result" not in envelope:
+            raise RuntimeError(f"claude CLI envelope carries no `result` field: {envelope}")
+        self.last_envelope = envelope
+        return {"content": envelope["result"], "tool_calls": []}
+
+
 class Stub(Backend):
     """Deterministic answers, keyed on the role in the system prompt. See :mod:`hgi.stub` for the rules."""
 
@@ -140,11 +202,14 @@ def wandb_api_key() -> str | None:
 
 
 def from_env() -> Backend:
-    """The backend the environment names: the endpoint of ``$HGI_INFERENCE_BASE_URL`` and ``$HGI_MODEL_ID``, else the stub."""
+    """The backend the environment names: the endpoint of ``$HGI_INFERENCE_BASE_URL`` and ``$HGI_MODEL_ID``,
+    the local ``claude`` CLI when the base url is :data:`CLAUDE_CLI_SENTINEL`, else the stub."""
     base_url = os.environ.get("HGI_INFERENCE_BASE_URL")
     model = os.environ.get("HGI_MODEL_ID")
     if not (base_url and model):
         return Stub()
+    if base_url == CLAUDE_CLI_SENTINEL:
+        return ClaudeCLI(model=model)
     key = os.environ.get("HGI_INFERENCE_API_KEY") or (wandb_api_key() if base_url.startswith(WANDB_INFERENCE) else None) or "none"
     project = tracing.project_name() if base_url.startswith(WANDB_INFERENCE) else None
     return OpenAICompatible(base_url, key, model, project=project)

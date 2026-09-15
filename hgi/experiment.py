@@ -134,6 +134,10 @@ class ModelSpec(BaseModel):
     """The deterministic stub under this alias's ``id`` — for offline arms and for telling two stub roles apart."""
     reasoning_effort: str | None = None
     """``low`` | ``medium`` | ``high``, sent as ``reasoning_effort`` on every call to this model; only models that accept the parameter should set it — gpt-oss does."""
+    provider: str | None = None
+    """``"claude-cli"`` routes this alias to the local ``claude`` CLI (:class:`hgi.model.ClaudeCLI`, ``id`` as its
+    model alias) instead of an OpenAI-compatible endpoint — a cost-offload path for a teacher role, billed to a
+    Claude subscription. ``None`` (the default) is every existing spec's path and is unaffected."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -142,6 +146,8 @@ class ModelSpec(BaseModel):
             b = _model.Stub()
             b.model_id = self.id
             return b
+        if self.provider == "claude-cli" or self.base_url == _model.CLAUDE_CLI_SENTINEL:
+            return _model.ClaudeCLI(model=self.id)
         on_wandb = self.base_url.startswith(_model.WANDB_INFERENCE)
         key = os.environ.get(self.api_key_env) or (_model.wandb_api_key() if on_wandb else None)
         if not key:
