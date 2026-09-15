@@ -24,31 +24,16 @@
 # consolidated every pass, budgeted at the knowing floor of one shell call: only a pass that already knows the schema
 # convention stays in budget. The ~0.5 first-sight rate is the hypothesis this run measures (carry-forward item 89).
 #
-# Ids are W&B Inference ids as listed on 2026-09-13; `hgi experiment models` lists today's.
+# The model registry (gpt-oss-120b the actor, gpt-oss-20b the weaker actor, deepseek-pro the teacher) and the
+# split-roles teacher block come from experiments/_teacher.toml; `hgi experiment models` lists today's ids.
 name = "text2sql"
 description = "first-sight text-to-SQL on unseen BIRD questions over one schema as the store grows, a strong teacher over the actor"
-weave_project = "hgi-experiments"
-
-[models.gpt-oss-120b]
-id = "openai/gpt-oss-120b"
-
-[models.gpt-oss-20b]
-id = "openai/gpt-oss-20b"
-
-[models.deepseek-pro]
-id = "deepseek-ai/DeepSeek-V4-Pro"
+extends = "_teacher.toml"
 
 [defaults]
 model = "gpt-oss-120b"
 passes_per_round = 2
 concurrency = 2
-
-[defaults.roles]
-consolidator = "deepseek-pro"
-examiner = "deepseek-pro"
-adjudicator = "deepseek-pro"
-coder = "deepseek-pro"
-reauthor = "deepseek-pro"
 
 [defaults.stream]
 families = ["text2sql", "text2sql-holdout"]

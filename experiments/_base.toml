@@ -1,0 +1,21 @@
+# Shared base for the W&B-Inference experiments: the Weave project the arms trace into and the model
+# registry — the ids `hgi experiment models` lists today. A file `extends = "_base.toml"` to inherit
+# these instead of restating them; its own tables override, deep-merged (hgi/experiment.py `_merge`).
+# An unused alias in the registry is inert — an arm resolves only the models its pass and roles name —
+# so a file inherits the whole registry and names the subset it runs on.
+#
+# This file is not a runnable experiment: it declares no arms, and the `_` prefix keeps it out of the
+# experiment glob. Ids are W&B Inference ids as listed on 2026-09-13.
+weave_project = "hgi-experiments"
+
+[models.gpt-oss-120b]
+id = "openai/gpt-oss-120b"
+
+[models.gpt-oss-20b]
+id = "openai/gpt-oss-20b"
+
+[models.qwen3-35b]
+id = "Qwen/Qwen3.6-35B-A3B"
+
+[models.deepseek-pro]
+id = "deepseek-ai/DeepSeek-V4-Pro"

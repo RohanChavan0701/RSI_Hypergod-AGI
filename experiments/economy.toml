@@ -4,13 +4,10 @@
 # method may fit the instance. The plain pool, where correctness saturates, so the quality series carry the curve:
 # solution_economy, turn_economy and method_transfer beside task_pass_rate, paired per batch and per lesson.
 #
-# Ids are W&B Inference ids as listed on 2026-09-12; `hgi experiment models` lists today's.
+# The Weave project and the model registry come from experiments/_base.toml; `hgi experiment models` lists today's ids.
 name = "economy"
 description = "the stream graded on solution quality: economy of calls and turns, and method transfer to a twin world"
-weave_project = "hgi-experiments"
-
-[models.gpt-oss-120b]
-id = "openai/gpt-oss-120b"
+extends = "_base.toml"
 
 [defaults]
 model = "gpt-oss-120b"

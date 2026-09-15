@@ -15,31 +15,16 @@
 # misses. A second actor, gpt-oss-20b, meets the same stream under the same teacher; the detached arm is the actor
 # alone. The first-sight rate on the ~0.5 band is the hypothesis this run measures (carry-forward item 88).
 #
-# Ids are W&B Inference ids as listed on 2026-09-13; `hgi experiment models` lists today's.
+# The model registry (qwen3-35b the actor, gpt-oss-20b the weaker actor, deepseek-pro the teacher) and the
+# split-roles teacher block come from experiments/_teacher.toml; `hgi experiment models` lists today's ids.
 name = "reasoning-core"
 description = "first-sight produce-and-verify on unseen regexes and grammars as the store grows, a strong teacher over a mid-sized actor"
-weave_project = "hgi-experiments"
-
-[models.qwen3-35b]
-id = "Qwen/Qwen3.6-35B-A3B"
-
-[models.gpt-oss-20b]
-id = "openai/gpt-oss-20b"
-
-[models.deepseek-pro]
-id = "deepseek-ai/DeepSeek-V4-Pro"
+extends = "_teacher.toml"
 
 [defaults]
 model = "qwen3-35b"
 passes_per_round = 2
 concurrency = 4
-
-[defaults.roles]
-consolidator = "deepseek-pro"
-examiner = "deepseek-pro"
-adjudicator = "deepseek-pro"
-coder = "deepseek-pro"
-reauthor = "deepseek-pro"
 
 [defaults.stream]
 families = ["reasoning-core"]

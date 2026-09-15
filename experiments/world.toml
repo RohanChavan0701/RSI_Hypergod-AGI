@@ -4,16 +4,10 @@
 # hold two independent observations of the same shape. Attached arms lead; one detached arm is the
 # ablation for the suite and needs no rerun — with no store it sees the same world every time.
 #
-# Ids are W&B Inference ids as listed on 2026-09-12; `hgi experiment models` lists today's.
+# The Weave project and the model registry come from experiments/_base.toml; `hgi experiment models` lists today's ids.
 name = "world"
 description = "memory attached against detached on a broad suite with world conventions and harder faults"
-weave_project = "hgi-experiments"
-
-[models.gpt-oss-120b]
-id = "openai/gpt-oss-120b"
-
-[models.gpt-oss-20b]
-id = "openai/gpt-oss-20b"
+extends = "_base.toml"
 
 [defaults]
 model = "gpt-oss-120b"

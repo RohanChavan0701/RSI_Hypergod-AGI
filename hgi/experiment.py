@@ -34,6 +34,17 @@ environment variable that holds its key.
     [arms.strong-judge.roles]
     adjudicator = "gpt-oss-120b"            # any role not named runs on the arm's model
 
+A file may ``extends = "_base.toml"`` (a path relative to the file, or a list
+of them with later bases winning) to inherit a base file's tables — the
+shared model registry, the ``weave_project``, a defaults block — which the
+file's own tables then override, deep-merged the way an arm overrides the
+defaults. A base may itself ``extends`` another; a base declares no arms and
+is not a runnable experiment (its name is ``_``-prefixed by convention). The
+experiment an arm loaded is snapshotted, bases merged in and ``extends``
+stripped, as ``experiment.json`` beside its ``arm.json``, so a later reading
+resolves against the file as it was and not against a base since edited
+(:func:`Experiment.resolved`, item 52).
+
 A **stream** arm meets a different batch every pass instead of one suite
 every pass (:mod:`suite.stream`): ``[stream]`` names the pool's families,
 the batch size and count, the seed and the fault profile, and the batches
@@ -90,7 +101,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 import suite as _suite
 from hgi import evolution
@@ -224,6 +235,16 @@ class Experiment(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    _resolved: dict[str, Any] = PrivateAttr(default_factory=dict)
+    """The file's tables with every ``extends`` base merged in and ``extends`` stripped, as :func:`load` read them —
+    the self-contained definition, snapshotted beside ``arm.json`` (:func:`resolved`)."""
+
+    def resolved(self) -> dict[str, Any]:
+        """The self-contained experiment definition an arm loaded: the file's tables with every ``extends`` base merged
+        under them and ``extends`` stripped. Snapshotted beside ``arm.json`` so a later reading resolves against the file
+        as it was, not against a base file since edited (item 52). Reconstructed from :func:`load` when set, else re-read."""
+        return self._resolved or (_load_raw(self.path) if self.path else {})
+
     def model_spec(self, alias: str) -> ModelSpec:
         if alias in self.models:
             return self.models[alias]
@@ -256,11 +277,29 @@ def _merge(base: dict[str, Any], over: dict[str, Any]) -> dict[str, Any]:
     return base
 
 
-def load(path: Path | str) -> Experiment:
+def _load_raw(path: Path | str) -> dict[str, Any]:
+    """A file's tables with its ``extends`` bases merged under them and ``extends`` stripped. ``extends`` names a base file
+    (or a list of them, later bases winning) resolved relative to this file; a base may itself ``extends`` another. The
+    child's tables override the bases, deep-merged like an arm over the defaults (:func:`_merge`). A ``.json`` file is
+    read as a resolved snapshot (:func:`Experiment.resolved`); everything else as TOML."""
     path = Path(path)
     with path.open("rb") as f:
-        raw = tomllib.load(f)
-    return Experiment(**raw, path=path)
+        raw = json.load(f) if path.suffix == ".json" else tomllib.load(f)
+    bases = raw.pop("extends", None)
+    if not bases:
+        return raw
+    merged: dict[str, Any] = {}
+    for rel in [bases] if isinstance(bases, str) else bases:
+        _merge(merged, _load_raw((path.parent / rel).resolve()))
+    return _merge(merged, raw)
+
+
+def load(path: Path | str) -> Experiment:
+    path = Path(path)
+    raw = _load_raw(path)
+    exp = Experiment(**raw, path=path)
+    exp._resolved = raw
+    return exp
 
 
 def runs_root() -> Path:
@@ -426,6 +465,7 @@ def run_arm(exp: Experiment, arm: str, root: Path | None = None, *, commit: bool
         "commit": _tree_commit(),
     }
     _write(where / "arm.json", record)
+    _write(where / "experiment.json", exp.resolved())  # item 52: pin the resolved definition (extends merged in) beside the arm
     previous_store = os.environ.get("HGI_STORE")
     os.environ["HGI_STORE"] = str(store_root)
     tracing.run(exp.name, arm)

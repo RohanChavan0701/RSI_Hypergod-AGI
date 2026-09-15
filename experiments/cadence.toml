@@ -3,10 +3,7 @@
 # consolidation, so a cadence of one may never admit — that is what this measures. One model.
 name = "cadence"
 description = "how often to consolidate, six passes each"
-weave_project = "hgi-experiments"
-
-[models.gpt-oss-120b]
-id = "openai/gpt-oss-120b"
+extends = "_base.toml"
 
 [defaults]
 model = "gpt-oss-120b"

@@ -4,6 +4,7 @@ curves back from the stores."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -33,13 +34,55 @@ def test_the_smoke_file_resolves_its_arms_from_the_defaults():
     assert set(exp.roster("attached").values()) == {"stub"}
 
 
+def shipped_experiments():
+    """Every runnable experiment file — `_`-prefixed files are extends bases (`_base.toml`, `_teacher.toml`),
+    not experiments, and declare no arms."""
+    return [p for p in EXPERIMENTS.glob("*.toml") if not p.name.startswith("_")]
+
+
 def test_every_shipped_experiment_resolves():
-    for path in EXPERIMENTS.glob("*.toml"):
+    for path in shipped_experiments():
         exp = _experiment.load(path)
         for arm in exp.arms:
             spec = exp.resolve(arm)
             assert spec.passes == spec.rounds * spec.passes_per_round
             assert exp.roster(arm)["pass"]
+
+
+def test_extends_inherits_the_base_and_the_child_overrides_it_deep_merged():
+    """A file `extends`-ing a base inherits the base's tables — the model registry, `weave_project`, the teacher
+    roles — merged under its own, which override deep (the arm's own `[defaults]` alongside the base's roles). The
+    reasoning-core files' teacher block and registry live in `_teacher.toml`/`_base.toml`, not the files themselves."""
+    src = (EXPERIMENTS / "reasoning-core.toml").read_text()
+    assert 'extends = "_teacher.toml"' in src and "[defaults.roles]" not in src  # inherited, not restated
+    exp = _experiment.load(EXPERIMENTS / "reasoning-core.toml")
+    roster = exp.roster("qwen-attached")
+    assert roster["pass"] == "Qwen/Qwen3.6-35B-A3B"  # the file's own actor
+    teacher = "deepseek-ai/DeepSeek-V4-Pro"
+    assert all(roster[r] == teacher for r in ("consolidator", "examiner", "adjudicator", "coder", "reauthor"))
+    # `_base.toml`'s registry and weave_project are inherited; the child's own defaults sit alongside the base's roles
+    spec = exp.resolve("qwen-attached")
+    assert exp.model_spec("gpt-oss-120b").id == "openai/gpt-oss-120b"  # inherited, unused, inert
+    assert exp.weave_project == "hgi-experiments"
+    assert spec.passes_per_round == 2 and spec.concurrency == 4
+
+
+def test_resolved_is_a_self_contained_snapshot_that_reloads_identically(tmp_path):
+    """`Experiment.resolved()` is the file's tables with every `extends` base merged in and `extends` stripped —
+    the definition an arm pins beside its `arm.json` (item 52). Written out and reloaded, it resolves every arm
+    exactly as the source did, so a later reading is unaffected by an edit to a base since the arm ran."""
+    exp = _experiment.load(EXPERIMENTS / "reasoning-core.toml")
+    resolved = exp.resolved()
+    assert "extends" not in resolved
+    assert set(resolved["models"]) == {"gpt-oss-120b", "gpt-oss-20b", "qwen3-35b", "deepseek-pro"}
+    assert resolved["defaults"]["roles"]["consolidator"] == "deepseek-pro"
+
+    snapshot = tmp_path / "experiment.json"
+    snapshot.write_text(json.dumps(resolved))
+    reloaded = _experiment.load(snapshot)
+    for arm in exp.arms:
+        assert reloaded.resolve(arm).model_dump() == exp.resolve(arm).model_dump()
+        assert reloaded.roster(arm) == exp.roster(arm)
 
 
 def test_the_text2sql_stream_samples_six_to_a_batch_from_the_enlarged_pool():

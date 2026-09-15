@@ -100,6 +100,8 @@ def test_two_seeds_inject_in_order_and_the_manifest_holds_both(tmp_path):
 
 def test_every_seeded_arm_in_the_experiment_files_resolves():
     for toml in sorted((ROOT / "experiments").glob("*.toml")):
+        if toml.name.startswith("_"):  # extends bases (_base.toml, _teacher.toml), not experiments
+            continue
         exp = _experiment.load(toml)
         for arm in exp.arms:
             spec = exp.resolve(arm)

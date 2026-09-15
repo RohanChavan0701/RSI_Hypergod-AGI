@@ -1,0 +1,12 @@
+# The split-roles base: `_base.toml`'s registry and Weave project, plus the teacher block every
+# split-roles run shares — only the forward pass runs on the arm's actor; every other role runs on
+# the strong teacher DeepSeek-V4-Pro. A file `extends = "_teacher.toml"` to inherit both; it still
+# names its own `[defaults] model` (the actor) and may override any role. Not a runnable experiment.
+extends = "_base.toml"
+
+[defaults.roles]
+consolidator = "deepseek-pro"
+examiner = "deepseek-pro"
+adjudicator = "deepseek-pro"
+coder = "deepseek-pro"
+reauthor = "deepseek-pro"

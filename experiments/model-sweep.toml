@@ -3,19 +3,11 @@
 # the roles: a small model acts, a larger one consolidates, examines and adjudicates (§ 9.6:
 # four contexts, one model or several). Every arm is 3 rounds × 2 passes.
 #
-# Ids are W&B Inference ids as listed on 2026-09-12; `hgi experiment models` lists today's.
+# The Weave project and the model registry (gpt-oss-20b, gpt-oss-120b, qwen3-35b) come from
+# experiments/_base.toml; `hgi experiment models` lists today's ids.
 name = "model-sweep"
 description = "the same run across model sizes, and the roles split across two"
-weave_project = "hgi-experiments"
-
-[models.gpt-oss-20b]
-id = "openai/gpt-oss-20b"
-
-[models.gpt-oss-120b]
-id = "openai/gpt-oss-120b"
-
-[models.qwen3-35b]
-id = "Qwen/Qwen3.6-35B-A3B"
+extends = "_base.toml"
 
 [defaults]
 rounds = 3
