@@ -911,6 +911,10 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
     list(exp.arms)`), and `report` wraps per-arm resolution in try/except so an
     unconstructable sibling becomes a "cannot resolve" note row, not a crash — a
     TOML that later gains an arm no longer exit-1s a finished arm's report.
+    **Built (a), second half (item 68, decision 101):** a run now snapshots the
+    resolved experiment (bases merged in, `extends` stripped) as `experiment.json`
+    beside its `arm.json`, so a later reading resolves against the file as the arm
+    loaded it, not against a base since edited.
     (b) is item 55 (the reruns and their result files are unwritten because the
     reruns are unrun). (c) the seeded twins now exist for both experiments (items
     47, 51) but neither rerun has been executed (item 55). (d) stands.
@@ -1660,6 +1664,24 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
     `qwen-strict-attached` (the seeded twin waits on the seed re-authoring, decision
     100). If strict is *also* saturated, the lever is a different/weaker actor or a
     higher generator level, not the window.
+68. **Experiment files derive from shared bases; the resolved definition is pinned
+    per arm** (2026-09-15, decision 101). The W&B-Inference files' restated model
+    registry, `weave_project` and split-roles teacher block now live in
+    `experiments/_base.toml` and `experiments/_teacher.toml`; ten files `extends` one
+    of them via `load()`'s new top-level `extends` key (deep-merged by the same
+    `_merge` that lays an arm over the defaults). `run_arm` writes the resolved
+    experiment as `experiment.json` beside `arm.json` (the second half of item 52(a)).
+    All 72 arms resolve byte-identically before/after (captured-baseline diff + two new
+    tests in `tests/test_experiment.py`). *Left un-migrated by choice:* `incidents.toml`
+    (its own aliases and a different DeepSeek id, `-0813`), the `hgi-dev` probes
+    (`probe.toml`, `stream-probe.toml` — a different `weave_project`), and the stub
+    smoke files (no registry). *Leftover:* (a) `reasoning-core`/`-hard` are still
+    arm-for-arm twins differing only in the family suffix — `extends` removed their
+    shared models/roles/defaults but not the per-arm `families` lines or the prose;
+    parameterizing the suffix was judged more machinery than two files justify (decision
+    101), revisit if a third tier appears. (b) nothing re-reads `experiment.json` yet —
+    `report`/`compare`/`from_dir` still read `arm.json`'s recorded spec (self-contained
+    per arm); the pin is provenance for a human or a future reader, not yet a load path.
 
 ## Housekeeping
 

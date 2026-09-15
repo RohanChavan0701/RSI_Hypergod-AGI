@@ -1407,3 +1407,35 @@ number); it is kept as authored so the cross-references stay valid.
     re-authored for `(10,16)` before the `qwen-seeded`/`qwen-strict-seeded` twins run.
     The plain arms (attached, detached, strict, 20b) do not use the seed and run at
     the new floor once calibrated.
+101. **Experiment files derive from shared bases via `extends`, and an arm pins the
+    resolved definition beside its `arm.json`** (item 68, 2026-09-15). `load()` reads
+    an optional top-level `extends` — a base file, or a list, resolved relative to the
+    file — and deep-merges the file's tables over the base(s) with the same `_merge`
+    that lays an arm over the defaults, so inheritance is one more level of the merge
+    already in use, not a second mechanism (`hgi/experiment.py`). Two bases hold what
+    the W&B-Inference runs restated file by file: `experiments/_base.toml` the
+    `weave_project` and the model registry (the ids `hgi experiment models` lists), and
+    `experiments/_teacher.toml` (itself `extends`-ing `_base`) the split-roles teacher
+    block. Ten files now `extends` one of them, dropping ~18 model-id declarations, 13
+    `weave_project` lines and 3 verbatim teacher blocks. `Experiment.resolved()` returns
+    the file's tables with every base merged in and `extends` stripped; `run_arm` writes
+    it as `experiment.json` beside `arm.json`, and `load()` reads a `.json` file back as
+    that snapshot — the second half of item 52(a) (the first, resolve-only-the-arm-run,
+    was built at `9847d1b`). *Why extends, not a templating/codegen layer:* it keeps the
+    files plain readable TOML the spec's "declared once, kept out of the run" ethos wants,
+    reuses `_merge`, and adds ~12 lines to `load()` with no new schema type. *Why a JSON
+    snapshot, not a TOML one:* the venv has no TOML writer (stdlib `tomllib` is read-only),
+    and JSON is a faithful, re-loadable resolution — so the pin does not depend on adding a
+    dependency. *Why two bases, not one:* the teacher roles are shared by exactly the three
+    split-roles files; folding them into `_base` would silently put DeepSeek on every other
+    file's non-pass roles and change their runs. *Why some files keep their own registry:*
+    `incidents.toml` uses different aliases and a different DeepSeek id (`-0813`), and the
+    `hgi-dev` probes a different `weave_project`; they are left un-migrated rather than made
+    to override the base back. *Why it may be right:* every one of the 72 arms across the 16
+    files resolves byte-identically before and after (a captured-baseline diff, and the two
+    new tests in `tests/test_experiment.py`), so the change is pure de-duplication; the base
+    files are `_`-prefixed and skipped by the experiment globs. *Why it may not:* an unused
+    alias inherited from `_base` now sits in a file's registry (inert, since an arm resolves
+    only the models it names — confirmed by the identical diff), and a base edit now reaches
+    every deriving file at once, which is the point but also a wider blast radius than a
+    per-file id; the `experiment.json` pin is what guards a *past* run against that.
