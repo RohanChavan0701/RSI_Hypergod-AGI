@@ -50,7 +50,7 @@ def classify(store: Store, session: Session) -> WorkShape:
     """
     terms = store.registry.terms("work-shape")
     c = _model.complete("pass", roles.request("classify", presentations=_suite.current().presentations(), terms=terms), session=session.id, pass_=session.pass_)
-    out = c.json()
+    out = c.json_or({})  # a garbled classify reply reads as no added terms; the tasks' declared shapes still floor the work-shape
     declared = {sh for t in _suite.current().tasks for sh in t.shapes if sh in terms}
     registered = sorted(declared | {t for t in out.get("terms", []) if t in terms})
     escapes = [t for t in out.get("terms", []) if t not in terms and t.startswith("other(")] + list(out.get("escapes", []))
@@ -94,9 +94,7 @@ def walk_lenses(store: Store, session: Session, host: str, subject_for) -> list[
                                     subject=subject, empty_is_legal=roles.EMPTY_LENS_IS_LEGAL)
             c = _model.complete("pass", payload, session=session.id, pass_=session.pass_,
                                 records_in_context=[x.record for x in session.considered if x.guard_passed])
-            out = c.json()
-            if not isinstance(out, dict):
-                out = {}
+            out = c.json_or({})  # a garbled lens reply is a legal empty answer (item 34), not a crash: it files no finding
             answers.append(LensAnswer(lens=lens.id, answer=str(out.get("answer", "")), findings=[f for f in out.get("findings", []) if isinstance(f, dict)], call=c.call))
     return answers
 

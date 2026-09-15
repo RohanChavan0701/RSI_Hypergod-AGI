@@ -79,7 +79,7 @@ def dispose(store: Store, session: Session) -> list[Disposition]:
                                                   co_applying=[{"records": g, "reading": _boot.CO_APPLYING} for g in _boot.co_applying(store, [c.record for c in session.consulted])],
                                                   fires_owed=[f.model_dump(by_alias=True, mode="json") for f in owed]),
                             session=session.id, pass_=session.pass_, records_in_context=[x["record"] for x in consulted])
-        reply = c.json()
+        reply = c.json_or({})  # a garbled dispose reply leaves records undisposed; the completeness check below refuses the close, never crashes it
         verdicts = {v["record"]: v for v in reply.get("dispositions", []) if isinstance(v, dict)}
         discharges = {d["fire"]: str(d.get("outcome") or "") for d in reply.get("fires", []) if isinstance(d, dict) and d.get("fire")}
     for f in owed:

@@ -79,7 +79,8 @@ async def _evaluate(evaluation: Evaluation, agent: Agent):
     return await evaluation.evaluate.call(evaluation, agent)
 
 
-def facts_from(summary: dict[str, Any], as_of: datetime, source: str | None) -> dict[str, Fact]:
+def facts_from(summary: dict[str, Any] | None, as_of: datetime, source: str | None) -> dict[str, Fact]:
+    summary = summary if isinstance(summary, dict) else {}  # a None or malformed (non-dict) summary reads as no evaluable series, never an AttributeError (item 34)
     facts = {}
     for scorer in SCORERS:
         name = scorer.model_fields["name"].default
@@ -89,6 +90,20 @@ def facts_from(summary: dict[str, Any], as_of: datetime, source: str | None) -> 
         facts[name] = Fact(series=series, value=mean, as_of=as_of, source=source) if mean is not None else \
             Fact(series=series, unevaluable="no row was evaluable on this series", as_of=as_of, source=source)
     return facts
+
+
+def summary_from_rows(row_scores: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Rebuild the scorers' summary from the per-row scores kept on the evaluation, for when the traced summary did not
+    come back. A Weave flush/pairing timeout returns a ``None`` summary (carry-forward item 34) even though every row was
+    scored and :attr:`Evaluation.row_scores` holds the results; each series is the mean of its evaluable rows, the same
+    shape weave's own auto-summary produces, so :func:`facts_from` reads it unchanged."""
+    summary: dict[str, Any] = {}
+    for scorer in SCORERS:
+        name = scorer.model_fields["name"].default
+        values = [row.get(name, {}).get("value") for row in row_scores.values() if isinstance(row.get(name), dict)]
+        evaluable = [v for v in values if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        summary[name] = {"value": {"mean": sum(evaluable) / len(evaluable) if evaluable else None}}
+    return summary
 
 
 def run(store: Store, session: Session) -> Session:
@@ -105,6 +120,8 @@ def run(store: Store, session: Session) -> Session:
     with tracing.attributes(session=session.id, pass_=session.pass_, role="pass", attached=session.attached,
                             records_in_context=[r["id"] for r in agent.records]):
         summary, call = asyncio.run(_evaluate(evaluation, agent))
+    if not isinstance(summary, dict):  # a Weave flush/pairing timeout returns no summary; rebuild it from the rows already scored (item 34)
+        summary = summary_from_rows(evaluation.row_scores)
     stamp = now()
     session.model_id = _model.model_id("pass")
     rows = [{**row, "scores": evaluation.row_scores.get(row["task"], {})} for row in agent.outputs]

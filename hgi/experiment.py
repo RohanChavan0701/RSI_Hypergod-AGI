@@ -475,6 +475,18 @@ def run_arm(exp: Experiment, arm: str, root: Path | None = None, *, commit: bool
         if cli.main([args[0], *argv, *args[1:]]) != 0:
             raise SystemExit(f"hgi {args[0]} failed in arm {arm}")
 
+    def hgi_retry(*args: str, tries: int = 3) -> None:
+        """A step that reaches the model or Weave endpoints, retried on a transient failure so a flush/pairing timeout or a
+        rate-limit blip does not abort the arm (carry-forward items 34, 36). Re-running ``evaluate`` on the same session
+        re-runs the suite and overwrites the session's evaluation, so the step is safe to repeat; the last attempt raises."""
+        for attempt in range(1, tries + 1):
+            try:
+                return hgi(*args)
+            except (Exception, SystemExit) as e:  # SystemExit is hgi()'s own nonzero-step signal and is not an Exception; KeyboardInterrupt still aborts
+                if attempt == tries:
+                    raise
+                print(f"arm {arm}: `{args[0]}` failed ({type(e).__name__}: {str(e).splitlines()[0][:200]}); retry {attempt}/{tries - 1}")
+
     def suite_for(n: int) -> Suite:
         """The suite pass ``n`` meets: batch ``n`` of the stream, a revisited batch past the stream, or the arm's one suite."""
         if not batches:
@@ -494,17 +506,25 @@ def run_arm(exp: Experiment, arm: str, root: Path | None = None, *, commit: bool
         if spec.mode == "attached":
             for n in range(1, spec.passes + len(spec.revisits) + 1):
                 _suite.use(suite_for(n))
-                session = store.mint("session")
-                hgi("boot", "--session", session, "--pass", str(n))
-                hgi("evaluate", "--session", session)
-                hgi("close", "--session", session)
-                if n <= spec.passes and n % spec.passes_per_round == 0:
-                    hgi("consolidate")
+                try:
+                    session = store.mint("session")
+                    hgi("boot", "--session", session, "--pass", str(n))
+                    hgi_retry("evaluate", "--session", session)
+                    hgi("close", "--session", session)
+                    if n <= spec.passes and n % spec.passes_per_round == 0:
+                        hgi("consolidate")
+                except (Exception, SystemExit) as e:  # a pass that still fails after its retries must not abort the arm unrecoverably (KeyboardInterrupt still aborts)
+                    # Bad data or a persistent endpoint fault on one pass finalizes the arm gracefully: the passes already
+                    # committed stand, the failure is recorded, and the `finally` writes arm.json and commits (item 34).
+                    record["error"] = f"pass {n} failed: {type(e).__name__}: {str(e).splitlines()[0][:300]}"
+                    print(f"arm {exp.name}/{arm}: {record['error']}; stopping after {n - 1} completed pass(es)")
+                    break
                 progress()
         else:
             _detached_passes(spec, store, hgi, progress, suite_for)
         _suite.use(world)
-        hgi("lint", "--model", roster["pass"])
+        if not record.get("error"):  # a lint over a partial store after a graceful stop would turn a recorded error into a crash
+            hgi("lint", "--model", roster["pass"])
     finally:
         record["finished_at"] = _now()
         _write(where / "arm.json", record)

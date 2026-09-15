@@ -61,6 +61,18 @@ class Completion:
             out = out["reply"]
         return out
 
+    def json_or(self, default: Any) -> Any:
+        """:meth:`json`, but returning ``default`` when the reply is not the JSON the caller needs — malformed JSON, or a
+        reply whose top-level type is not ``default``'s. For the sites whose contract already treats a missing or unusable
+        reply as empty ("empty is legal", a lens or disposition with nothing to say): a garbled endpoint reply degrades to
+        the empty answer instead of crashing the pass (carry-forward item 34). The drafting sites that must *refuse* a bad
+        draft keep calling :meth:`json` so the parse error still names the failing field."""
+        try:
+            out = self.json()
+        except (json.JSONDecodeError, ValueError):
+            return default
+        return out if isinstance(out, type(default)) else default
+
 
 class Backend:
     model_id: str
