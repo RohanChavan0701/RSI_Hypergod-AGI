@@ -1682,6 +1682,58 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
     101), revisit if a third tier appears. (b) nothing re-reads `experiment.json` yet —
     `report`/`compare`/`from_dir` still read `arm.json`'s recorded spec (self-contained
     per arm); the pin is provenance for a human or a future reader, not yet a load path.
+69. **Calibration (continues items 66/67): the hard strict pool is also saturated,
+    and none of the three difficulty levers is genuine — the actor's method ceiling
+    is high across grammar levels; what the strict pool's turn cap converts into
+    "failures" is slow convergence, not wrong method** (2026-09-15, all runs to the
+    session scratchpad, `--no-commit`, nothing under `runs/`). The item-67-owed
+    `qwen-strict-detached` pilot and two follow-up scratch pilots that triangulate the
+    lever:
+    - **`qwen-strict-detached` at `(10,16)`** (`Qwen/Qwen3.6-35B-A3B`, the billed pilot
+      item 67 owed; clean run — W&B auth, Weave, the item-53 shell preflight all passed).
+      First-sight **22/24 = 0.917** (curve `0.75 1.0 1.0 0.75 1.0 1.0`, confirmed by
+      `row_passed` over the six session stores — no hidden split). Per generator: **regex
+      12/12 = 1.0** (saturated), **cfg 10/12 = 0.83**; both failures (`cfg_00`, `cfg_01`)
+      are clean strict-pool method failures (valid schema, wrong answer, repair call
+      refused at budget 1). This is the **~0.85–1.0 still-saturated band**, the opposite
+      end from item 47's ~0.17 cliff. **NO-GO for `qwen-strict-attached`** — it would land
+      in item 66's near-saturated regime (thin method signal for the consolidating passes).
+      So the window raise (decision 100) is insufficient for the strict pool *as well as*
+      the lax pool: harder grammars give more wrong first candidates in principle, but at
+      `(10,16)` the actor still produces a valid member first-try on ~0.92 of rows.
+    - **Weaker actor `gpt-oss-20b`, strict-detached, cfg L3** (16-task scratch pilot, same
+      seed 0 as the qwen batches). First-sight **13/16 = 0.81** — a real ~11-point
+      downshift off qwen's 0.92 (and 20b now fails regex too, 5/7, where qwen was 12/12),
+      but still above the ~0.4–0.6 target. The weaker actor **alone** is not enough.
+    - **`cfg_level` 3→4, `gpt-oss-20b`, strict, cfg-only** (12-task scratch pilot; the
+      `HARD` tier bumped to `cfg_level=4`, same `(10,16)` window, temperature 0; run through
+      the real `evaluate_session(detached)` via `suite.use()` on a level-4 suite generated
+      by the real generator stack — Agent, `shell_budget=1`, scorers and checker all the
+      real ones). First-sight reads **6/12 = 0.50** — apparently dead-center of target — but
+      **that is a turn-cap artifact, not difficulty**: 4 of the 6 failures were
+      `turn limit reached` at `MAX_TURNS=8` (not method failures), and re-running the *same*
+      12 instances with `MAX_TURNS=16` gave **10/12 = 0.83**, with the four previously-
+      exhausted rows passing (three in a single turn — run-to-run endpoint nondeterminism at
+      temp 0, not the cap alone). Only `cfg_00` is a genuine grammar-difficulty method
+      failure across both runs; the remaining fail is an endpoint malformed-tool-call
+      artifact (item 42's class). So the actor's *convergent* ceiling at cfg L4 is ~0.83 —
+      the same saturated band as L3 — and the apparent target-band number at the real 8-turn
+      cap is **turn-starvation plus draw variance**, exactly item 66's "exogenous turn-limit
+      harness symptom": minted as observations, carrying no produce-and-verify method fact
+      the teacher can distill.
+    **Reading.** Across all three levers — grammar window (0.92–0.96), weaker actor (0.81),
+    `cfg_level` bump (0.50 artifact / 0.83 real) — none genuinely lowers the actor's
+    produce-and-verify ceiling. The strict premise (a wrong first candidate that cannot be
+    repaired) rarely bites because the actor's candidates are usually *eventually* correct
+    given turns; the turn cap, not correctness, is doing the separating. **NO-GO on
+    `cfg_level=4` as a difficulty lever** (and it would invalidate the seed, decision 100,
+    for a false lever). Raising the turn cap is the wrong direction (it lifts the rate);
+    lowering it manufactures harness-symptom failures, not method signal. **A genuine lever
+    must make the first candidate hard to get *right*, not slow to *verify*** — a task family
+    whose members need reasoning the actor cannot shortcut, or an actor materially weaker at
+    the produce step — not a longer derivation the actor still reaches. Until such a lever
+    exists, the `-hard` strict attached arms stay unrun; the seed re-authoring for `(10,16)`
+    (decision 100 / owed) is moot for these arms while the pool is saturated.
 
 ## Housekeeping
 
