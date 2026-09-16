@@ -52,6 +52,32 @@ def test_close_excludes_a_self_referential_finding_and_keeps_a_mixed_one(store):
     assert len(filed) == 2
 
 
+def test_close_blanks_a_store_machinery_turned_on_but_keeps_the_world_fact(store):
+    # A world-fact lens (L-0004) named the row's world-fact in `happened` but answered the routing
+    # question in `turned_on` ("no matching rule …"). The world-fact stands; only the exogenous
+    # convention is dropped — the observation keeps its literal (text2sql re-run 2026-09-15).
+    s = _session(store, 1, [FAULTED], {"task_pass_rate": 0.5})
+    s.lens_answers.append(LensAnswer(lens="L-0004", answer="", findings=[
+        {"happened": "q129 returned individual transaction rows instead of the summed top ten per district",
+         "turned_on": "no matching rule for text2sql generation", "anchor": {"call": "weave:///t/call/z"}},
+    ]))
+    filed = _close.file_observations(store, s)
+    assert len(filed) == 1, "the world-fact observation is still filed"
+    assert filed[0].turned_on is None, "a store-machinery turned_on is blanked"
+    assert "individual transaction rows" in filed[0].happened, "the world-fact happened is kept intact"
+
+
+def test_close_keeps_a_world_fact_turned_on(store):
+    # The gate is narrow: a `turned_on` that names a checkable world convention is kept untouched.
+    s = _session(store, 1, [FAULTED], {"task_pass_rate": 0.5})
+    s.lens_answers.append(LensAnswer(lens="L-0004", answer="", findings=[
+        {"happened": "q136 filtered on loan status 'A'", "turned_on": "status is coded 'A' not 'approved'",
+         "anchor": {"call": "weave:///t/call/w"}},
+    ]))
+    filed = _close.file_observations(store, s)
+    assert len(filed) == 1 and filed[0].turned_on == "status is coded 'A' not 'approved'"
+
+
 def test_close_does_not_filter_the_off_map_lens(store):
     # L-0010's coverage signal mentions "no rule / no hook" but its subject is the work; it must still file.
     s = _session(store, 1, [FAULTED], {"task_pass_rate": 0.0})

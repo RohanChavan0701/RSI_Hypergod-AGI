@@ -225,10 +225,10 @@ LENSES = [
      "externality": {"contact": "record", "terminates_in": "the store's premises and hooks, cited by id"},
      "product": "a list of {record, slot, what-changed, anchor}; empty is a legal answer", "consumer": "the backward pass"},
     {"id": "L-0004", "host": "close", "purpose": "generative",
-     "angle": "The first attempt in this pass was wrong somewhere — where, and which record should have fired?",
-     "counterfactual": "The overshoot: grading the pass's own lesson as settled — the answer is an observation at the floor, never a rule.",
+     "angle": "The first attempt in this pass failed on this row. Read the artifact — the query it produced, the rows it returned, the tool error — and name where it was wrong against the schema and the question: the clause, column, value or dialect token it got wrong.",
+     "counterfactual": "Two overshoots: grading the pass's own lesson as settled — the answer is an observation at the floor, never a rule; and answering with the store instead of the world — 'no rule matched', 'which record should have fired', 'no coverage' name the loop's routing, not this row's world-fact, and are the off-map lens's subject (L-0010), not this one's.",
      "externality": {"contact": "artifact", "terminates_in": "the trace: a call URI per finding"},
-     "product": "for the failed task in the subject, at most one {happened, turned_on, anchor, recheck_when}: `happened` names the task and the settled world-fact its first attempt met — the output, the tool error, the query text — in one or two sentences; `turned_on` names the convention it missed and what would have passed (optional, null when you cannot name one); `anchor` is {call: the row's call URI, path: null}; `recheck_when` says when to look for the same miss again; empty when the failure was not the pass's to avoid",
+     "product": "for the failed task in the subject, at most one {happened, turned_on, anchor, recheck_when}: `happened` names the task and the settled world-fact its first attempt met — the query text, the returned rows, the tool error — in one or two sentences; `turned_on` names the schema or dialect convention it missed as a checkable world-fact — a column, a coded value, a dialect token (STRFTIME on a TEXT date, CAST for a ratio) — never a store record or 'no rule / no coverage', which is L-0010's subject; null when you cannot name a world convention; `anchor` is {call: the row's call URI, path: null}; `recheck_when` says when to look for the same miss again; empty when the failure was not the pass's to avoid",
      "consumer": "the observation ledger; the backward pass"},
     {"id": "L-0009", "host": "close", "purpose": "generative",
      "angle": "A row passed, but its first attempt was wrong — a non-transient fault the pass corrected on the way to the score. Name the convention that first attempt missed.",
@@ -236,10 +236,10 @@ LENSES = [
      "externality": {"contact": "artifact", "terminates_in": "the trace: a call URI per finding"},
      "product": "a list of {happened, turned_on, anchor}; each becomes an observation: `happened` the settled world-fact, `turned_on` the convention it turned on (optional)", "consumer": "the observation ledger; the backward pass"},
     {"id": "L-0010", "host": "close", "purpose": "generative",
-     "angle": "This pass failed and matched no hook — the store held no rule for this work. Name the shape of work the store has no coverage for.",
-     "counterfactual": "The overshoot: crying 'a rule is missing' on a pass that did consult a record — that is not off-map; fire only when nothing was consulted and the work failed; empty is legal.",
+     "angle": "This pass failed and matched no hook — the store held no rule for this work. Name the one shape of work the store has no coverage for, at the altitude of the class, not the row.",
+     "counterfactual": "Two overshoots: crying 'a rule is missing' on a pass that did consult a record — that is not off-map, fire only when nothing was consulted and the work failed, empty is legal; and filing one finding per failed row — the coverage gap is one class of work, so name it once for the pass, not once per instance.",
      "externality": {"contact": "record", "terminates_in": "the pass's off-map disposition and its failed rows' calls in the trace"},
-     "product": "a list of {happened, turned_on, anchor}; each becomes an observation: `happened` the settled world-fact, `turned_on` the convention it turned on (optional)", "consumer": "the observation ledger; the backward pass"},
+     "product": "at most one {happened, turned_on, anchor}: `happened` names the class of work the store held no rule for — the work-shape, named once for the pass, not one finding per failed row; `turned_on` the coverage the store lacks (optional); `anchor` a representative failed row's call URI. It becomes one coverage observation feeding the should-have-been-covered miss stream.", "consumer": "the observation ledger; the backward pass"},
     # the examiner fan: the attack's angles, one context each (the fan law), hosted where independence is structural (the host law).
     # L-0005 and L-0008 are seeded retired through the crystallization door: their questions became gates the code reads
     # (hgi.lint.independence, hgi.consolidate.drop_success_watch), and the register keeps them as the evidence of that.

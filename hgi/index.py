@@ -48,8 +48,8 @@ def tokens(text: str) -> set[str]:
 # --- self-reference: a finding about the store's own machinery, not the task's world (carry-forward item 48) --------
 
 _LOOP_SUBJECT_CUES = (
-    "no rule matched", "no rule applied", "no applicable rule", "no record matched",
-    "no store record", "no store records", "no records consulted", "no record consulted",
+    "no rule matched", "no rule applied", "no applicable rule", "no matching rule", "no matching hook",
+    "no record matched", "no store record", "no store records", "no records consulted", "no record consulted",
     "no records were consulted", "no record was consulted", "nothing was consulted",
     "records consulted", "record consulted", "record should have fired", "record should have matched",
     "rule should have fired", "should have been consulted", "which record should", "which record fired",
@@ -57,10 +57,10 @@ _LOOP_SUBJECT_CUES = (
 )
 """Phrases whose grammatical subject is a store record or the loop's own consultation/routing machinery — a finding about
 *which record should have fired* rather than about the task's world. The stream-run artifact ("no store records consulted",
-"the check record should have fired", "no rule matched") is exactly this class. It is deliberately narrow: it matches a
-store *record* or the *consultation* act as the subject, never the bare word "rule"/"hook"/"store", so L-0010's off-map
-coverage signal ("work failed and matched no hook") — whose subject is the work — is not swept in even before its call
-site exempts it."""
+"the check record should have fired", "no rule matched", "no matching rule for text2sql generation") is exactly this class.
+It is deliberately narrow: it matches a store *record* or the *consultation* act as the subject, never the bare word
+"rule"/"hook"/"store", so L-0010's off-map coverage signal ("work failed and matched no hook") — whose subject is the work
+— is not swept in even before its call site exempts it."""
 
 _QUOTED = re.compile(r"""(['"`])[^'"`]+\1""")
 _COMPARISON = re.compile(r"(==|!=|<=|>=|(?<![<>=!])=(?!=))")

@@ -167,7 +167,11 @@ def file_observations(store: Store, session: Session) -> list[Observation]:
     A finding from a world-fact lens (any but :data:`OFF_MAP_LENS`) whose subject is a store record or the loop itself —
     "no store records consulted", "the check record should have fired" — is store machinery masquerading as a world fact
     and is not filed either (:func:`hgi.index.self_referential`, carry-forward item 48); a mixed noticing that also states
-    a world convention is kept."""
+    a world convention is kept. The same drift can land in ``turned_on`` alone — a real world-fact in ``happened`` beside a
+    store-machinery ``turned_on`` ("no matching rule for text2sql generation"), the answer to a routing question the lens
+    must not ask (text2sql re-run 2026-09-15). There the world-fact stands and only the ``turned_on`` is blanked: the
+    observation keeps its literal, drops the exogenous convention. L-0010 is exempt at both gates — its subject is the
+    coverage gap, legitimately about the store's missing hook."""
     out = []
     for answer in session.lens_answers:
         if answer.lens not in OBSERVATION_LENSES:
@@ -180,6 +184,8 @@ def file_observations(store: Store, session: Session) -> list[Observation]:
                 continue
             if answer.lens != OFF_MAP_LENS and _index.self_referential(happened, anchor):
                 continue  # a world-fact lens answered about the store, not the world; drift, not a world fact
+            if turned_on and answer.lens != OFF_MAP_LENS and _index.self_referential(turned_on, {}):
+                turned_on = None  # the world-fact `happened` stands; a store-machinery `turned_on` ("no matching rule") is coverage — L-0010's subject, not this row's convention
             o = Observation(uid=store.new_uid(), name=store.next_name("O"), noticed_at=now(), session=session.id,
                             happened=happened, turned_on=turned_on, anchor=anchor, recheck_when=f.get("recheck_when"))
             store.write(o)
