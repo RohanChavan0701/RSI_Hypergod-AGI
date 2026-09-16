@@ -84,9 +84,9 @@
     }
   },
   {
-    "angle": "The first attempt in this pass was wrong somewhere — where, and which record should have fired?",
+    "angle": "The first attempt in this pass was wrong somewhere — where? For each failed world-fact, answer with a single finding that names, in `happened`, the concrete world-literal the attempt actually met — the value, token, route, or output it got, transcribable exactly as it appeared — and, in `turned_on`, the convention that literal turned on. Keep the literal and the convention together in one finding; never split them into a 'what happened' finding and a separate 'what it meant' finding on the same spot.",
     "consumer": "the observation ledger; the backward pass",
-    "counterfactual": "The overshoot: grading the pass's own lesson as settled — the answer is an observation at the floor, never a rule.",
+    "counterfactual": "The overshoot: grading the pass's own lesson as settled, or splitting one miss across two findings — a bare literal with no convention next to a bare convention with no literal. The answer is one observation at the floor carrying both halves, never a rule and never two halves.",
     "externality": {
       "contact": "artifact",
       "terminates_in": "the trace: a call URI per finding"
@@ -112,9 +112,9 @@
     }
   },
   {
-    "angle": "A row passed, but its first attempt was wrong — a non-transient fault the pass corrected on the way to the score. Name the convention that first attempt missed.",
+    "angle": "A row passed, but its first attempt was wrong — a non-transient fault the pass corrected on the way to the score. For each such fault, answer with a single finding that names, in `happened`, the concrete world-literal the first attempt met — the value, token, route, or output it got — and, in `turned_on`, the convention it missed. Keep the literal and the convention together in one finding, never a literal finding and a convention finding apart.",
     "consumer": "the observation ledger; the backward pass",
-    "counterfactual": "The overshoot: filing the transient fault that cleared on retry — a recovered 502 is loud but non-causal; file only a non-transient miss the pass corrected.",
+    "counterfactual": "The overshoot: filing the transient fault that cleared on retry — a recovered 502 is loud but non-causal; file only a non-transient miss the pass corrected. And do not split that miss across two findings — the literal it met and the convention it turned on belong in one.",
     "externality": {
       "contact": "artifact",
       "terminates_in": "the trace: a call URI per finding"

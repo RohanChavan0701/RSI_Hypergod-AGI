@@ -109,12 +109,60 @@ def dispose(store: Store, session: Session) -> list[Disposition]:
     return out
 
 
+def _merge_split_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Fold a literal-bearing finding and its inference-bearing sibling on one anchor into a single whole finding.
+
+    An observation lens answers each failed world-fact with one finding that carries both halves — the concrete
+    world-literal in ``happened`` and the convention it turned on in ``turned_on``. When a lens instead splits them —
+    a finding that names the literal but leaves ``turned_on`` empty, and a sibling on the *same* ``call`` anchor that
+    carries the convention inference — filing each half separately hands the drafting floor (which needs the literal)
+    and the grouping (which needs the convention) two half-observations that never meet (carry-forward item 71 point 6).
+    This safety-net merges the clean pair so one observation carries both, keying only on the shared ``call`` anchor and
+    never on any domain literal. It is conservative: it merges only an unambiguous pair on one call — one finding lacking
+    the inference, one supplying it — and leaves every other finding untouched (a finding with no ``call`` anchor, a
+    finding already whole, a standalone half with no sibling, or an ambiguous crowd of findings on one call), so no
+    finding that stands alone is ever dropped."""
+    def _whole(lit: dict[str, Any], inf: dict[str, Any]) -> dict[str, Any]:
+        merged = dict(lit)
+        merged["turned_on"] = inf.get("turned_on")
+        if not str(lit.get("recheck_when") or "").strip():
+            merged["recheck_when"] = inf.get("recheck_when")
+        merged["anchor"] = {**dict(inf.get("anchor") or {}), **dict(lit.get("anchor") or {})}  # literal's fields win; any extra anchor field survives
+        return merged
+    by_call: dict[str, list[int]] = {}
+    for i, f in enumerate(findings):
+        call = (f.get("anchor") or {}).get("call")
+        if call:
+            by_call.setdefault(call, []).append(i)
+    merged_at: dict[int, dict[str, Any]] = {}
+    dropped: set[int] = set()
+    for idxs in by_call.values():
+        if len(idxs) != 2:
+            continue  # a clean pair is exactly two findings on one call; a crowd is ambiguous, left as-is
+        a, b = (findings[idxs[0]], findings[idxs[1]])
+        a_lit = bool(str(a.get("happened") or "").strip()) and not str(a.get("turned_on") or "").strip()
+        b_lit = bool(str(b.get("happened") or "").strip()) and not str(b.get("turned_on") or "").strip()
+        a_inf, b_inf = bool(str(a.get("turned_on") or "").strip()), bool(str(b.get("turned_on") or "").strip())
+        if a_lit and b_inf and not b_lit:  # a names the literal without an inference; b supplies the inference
+            merged_at[idxs[0]], dropped = _whole(a, b), dropped | {idxs[1]}
+        elif b_lit and a_inf and not a_lit:  # symmetric: b is the literal half, a the inference half
+            merged_at[idxs[1]], dropped = _whole(b, a), dropped | {idxs[0]}
+    return [merged_at.get(i, f) for i, f in enumerate(findings) if i not in dropped]
+
+
 def file_observations(store: Store, session: Session) -> list[Observation]:
     """Step 3a. Each finding from a close observation-producing lens (:data:`OBSERVATION_LENSES`) with an anchor and a
     non-empty ``happened`` becomes an observation; a finding with no anchor, or with nothing in ``happened`` (a reply that
     dropped the field), is not filed — an observation states the settled world-fact that happened. The optional
     ``turned_on`` carries the convention the attempt met or missed, the model's inference, kept out of the ``happened``
     register.
+
+    A finding names both halves of its miss in one record: the concrete world-literal in ``happened`` and the convention
+    it turned on in ``turned_on``. When a lens splits them across two findings on one ``call`` anchor — a literal with no
+    inference beside an inference with no literal — :func:`_merge_split_findings` folds the clean pair back into one whole
+    finding before filing, so the drafting floor and the grouping read one observation carrying both, not two halves
+    (carry-forward item 71 point 6). The merge keys only on the shared anchor, merges only an unambiguous pair, and drops
+    no finding that stands alone.
 
     A finding from a world-fact lens (any but :data:`OFF_MAP_LENS`) whose subject is a store record or the loop itself —
     "no store records consulted", "the check record should have fired" — is store machinery masquerading as a world fact
@@ -124,7 +172,7 @@ def file_observations(store: Store, session: Session) -> list[Observation]:
     for answer in session.lens_answers:
         if answer.lens not in OBSERVATION_LENSES:
             continue
-        for f in answer.findings:
+        for f in _merge_split_findings(list(answer.findings)):
             anchor = dict(f.get("anchor") or {})
             happened = str(f.get("happened") or "").strip()
             turned_on = str(f.get("turned_on") or "").strip() or None
