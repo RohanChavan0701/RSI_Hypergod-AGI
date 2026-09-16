@@ -1792,16 +1792,83 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
       arm ≈ **$0.5–1.3** on W&B-Inference prices (a one-off Weave usage query; the
       repo still prices nothing — item 44), of which the **teacher is ~70%**
       (DeepSeek runs every backward-pass role at ~10× the actor's per-token price).
-      A `ClaudeCLI` teacher backend (billed to the claude.ai subscription, not
-      per-token) is prototyped and validated at the `hgi roles try` level — valid
-      role JSON, primers stripped, `apiProvider: firstParty` — with **latency
-      (~2 min/call)** the open concern; a flag-gated **fused propose+examine** mode
-      (fold the examiner fan into the consolidator, keep the adjudicator fresh) and
-      an **effort=low** knob (`--effort` on the CLI, `reasoning_effort` on W&B) are
-      being added on a worktree branch, pending a strict-arm pilot. Both trade the
-      examiner's structural fresh-context independence (the host law) and reasoning
-      depth for speed/cost, so they make an arm non-comparable to the split-role
-      studies — hence flag-gated, non-default.
+      A `ClaudeCLI` teacher backend (billed to the claude.ai subscription — `claude
+      auth status` shows `subscriptionType: max`, not per-token) is **built and
+      committed on branch `worktree-agent-a386d585f56938347` (commit `8cbb737`, off
+      current `main`), 773 tests green** — not yet on `main`. Validated at the `hgi
+      roles try` level (valid role JSON, primers stripped) but **not** through a full
+      live `consolidate`/strict-arm cycle. Two knobs ride it: an **effort** knob
+      (`--effort` on the CLI, default `low`; `reasoning_effort` already flows on W&B)
+      — measured latency for one `nominate` call: `high` ~162 s vs `low` ~20–48 s
+      (~8×, output length also swings it), so `low` is the default and the "~2 min/call"
+      seen earlier was `high`; and a flag-gated **fused propose+examine** mode
+      (`ArmSpec.fuse_examiner`, default off — one extra consolidator call self-critiques
+      across every lens angle instead of the N-call examiner fan; the ledger honestly
+      tags the source role `consolidator`, and the **adjudicator is untouched — still a
+      fresh, separate call**). Both trade the examiner's structural fresh-context
+      independence (the host law) and reasoning depth for speed/cost, so they make an
+      arm non-comparable to the split-role studies — hence flag-gated, non-default.
+      **Left:** a strict-arm scratch pilot on the CLI teacher (measures real
+      consolidation behaviour + end-to-end wall-clock + subscription rate-limits)
+      before merging the branch to `main`.
+71. **The weak decision-writing is predominantly a contract/vocabulary artifact,
+    not a model artifact — root-causing the item 39/49 weak-retrieval symptom to a
+    vocabulary-axis mismatch** (2026-09-15, Opus-4.8 clean-room re-mint of the item-70
+    run's 40 observations). To separate "is the teacher too weak?" from "is the
+    pipeline the limit?", a stronger model (Opus 4.8) was given *only* the 40
+    observations plus the teacher's actual decision-minting contract
+    (`consolidator.md`, the `Sketch` five slots in `drafting.py`, the
+    examiner/adjudicator gate, and `store/registry/vocabulary.json`) — the run's own
+    decisions withheld until after it minted.
+    - **Model layer (real but secondary):** from the same observations under the same
+      contract, Opus minted **four** distinct decisions — M-1 aggregation grain
+      (`COUNT(*)` vs `SUM`, per-entity `GROUP BY`), M-2 coded categorical literals
+      (`status='A'`, `operation='VYBER KARTOU'`, frequency codes), M-3 coded column
+      ids (`A11`/`A3`/`A4` vs descriptive names), M-4 schema inspection — against the
+      run's **one** lesson (D-0001 "inspect the schema", re-shipped verbatim as the
+      D-0002 hook-edit). So a stronger drafter gives ~4× coverage with token-bearing
+      payloads; that part is a model artifact.
+    - **Contract layer (the decisive, load-bearing failures — would defeat any model):**
+      1. *No SQL term in the work-shape vocabulary.* The registered work-shape terms
+         are all tool-level (`shell-tool`, `file-tool`, `output-schema`, `tool-budget`,
+         …); every SQL decision can only latch `shell-tool`, which is **pool-universal**
+         in a text2sql-only pool, so it keys no discriminating hook. The machine
+         confirmed it — the bar-clearing group scored `presentation_universality: 1.0,
+         ripeness: 0.0`. This is item 39/49's "generic-tool latch" symptom, now
+         root-caused: no expressible SQL hook exists, it is not a drafting slip.
+      2. *The fitting term exists in the wrong axis.* `schema-coded-value` is a
+         registered **`convention`-axis** term that exactly describes M-2/M-3, but
+         `Sketch.terms` is typed work-shape and the consultation latch's `key_space`
+         is work-shape (`drafting.body`), so a convention term can **never** key a
+         decision hook — and in K-0002 that term was used to **decline** the aggregation
+         nomination ("already covered by `schema-coded-value`"). The vocabulary that
+         should have *enabled* the lesson was used to *suppress* it.
+      3. *Aggregation was drafted-then-declined, not missed; coded-values was never
+         drafted* — it existed only as the grouping label that rejected aggregation.
+      4. *Bimodal grouping, both modes lossy.* Every coherent sub-convention
+         (`other(sum-instead-of-count)`, …) is a single-session singleton below the
+         2-session bar; the only bar-clearing groups are heterogeneous `other(uncoded)`
+         blobs that can author nothing sharper than "inspect the schema." No
+         granularity makes a logical fault both coherent and ≥2 sessions in a window.
+      5. *The blind coder escaped 100%* — all `other(...)`, `shape: []` on S-0005/6 —
+         never using the registered `convention` vocab, so the consolidator was handed
+         escapes, not conventions (compounds item 48/64).
+      6. *~45% of observations carry `turned_on: null`, and those are the token-bearing
+         ones* — the concrete literals (`'VYDAJ'`, `A11`) live in "result" observations
+         with no inferred convention, while the inference lives in the paired "attempt"
+         observation; token and lesson split across two records, so the drafting floor's
+         "name the concrete token or earn nothing" bites where the tokens are (item 40).
+    - **Fix (contract, not model), in leverage order:** (a) give consultation hooks a
+      legal SQL latch — either add SQL/query work-shape terms, or let `convention`-axis
+      terms key consultation hooks (today only work-shape does), which also stops a
+      convention term being used only to *decline*; (b) make the blind coder use the
+      registered `convention` vocabulary instead of escaping (extends item 64's
+      multi-shape coding); (c) group at a grain where a logical fault (aggregation
+      scope, coded values) stays coherent *and* clears the independence bar; (d) keep an
+      observation's token-bearing and inference-bearing halves in one record so
+      `turned_on` is not null on the rows that carry the literal. With these, Opus
+      judged even the original DeepSeek teacher would clear most of this. Deepens items
+      39, 49; relates to item 70 (the run these observations came from).
 
 ## Housekeeping
 
