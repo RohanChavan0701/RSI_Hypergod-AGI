@@ -140,12 +140,24 @@ class ClaudeCLI(Backend):
 
     This backend does not support tool-calling — the teacher roles it serves never pass ``tools`` — and
     does not act on ``json_mode``: the role prompt itself states the JSON reply shape (:data:`hgi.roles.REPLY_RULE`).
+
+    ``effort`` (``low | medium | high | xhigh | max``, the CLI's own ``--effort`` levels) defaults to
+    ``$HGI_CLAUDE_CLI_EFFORT`` or ``"low"`` — this backend serves the backward pass's teacher roles, where
+    latency (measured at ~2 minutes a call on ``sonnet`` at the default effort) is the live cost, so the
+    default is biased for speed; raise it per call site for a role that needs the deeper reasoning.
+    ``max_budget_usd`` (``$HGI_CLAUDE_CLI_MAX_BUDGET_USD``, unset by default) is a per-call safety cap the
+    CLI itself enforces (``--max-budget-usd``) — a stop against a runaway call burning the subscription's
+    metered spend, not a pricing input the loop reads.
     """
 
-    def __init__(self, model: str = "sonnet", *, claude_bin: str | None = None, timeout: float = 300.0):
+    def __init__(self, model: str = "sonnet", *, claude_bin: str | None = None, timeout: float = 300.0,
+                 effort: str | None = None, max_budget_usd: float | None = None):
         self.model_id = model
         self.claude_bin = claude_bin or os.environ.get("HGI_CLAUDE_CLI_BIN") or "claude"
         self.timeout = timeout
+        self.effort = effort if effort is not None else os.environ.get("HGI_CLAUDE_CLI_EFFORT", "low")
+        budget_env = os.environ.get("HGI_CLAUDE_CLI_MAX_BUDGET_USD")
+        self.max_budget_usd = max_budget_usd if max_budget_usd is not None else (float(budget_env) if budget_env else None)
         self.last_envelope: dict[str, Any] | None = None
         """The most recent call's parsed envelope — usage, cost, latency — kept for inspection, not read by ``chat``."""
 
@@ -154,7 +166,12 @@ class ClaudeCLI(Backend):
         system = next((m["content"] for m in messages if m.get("role") == "system"), "")
         user = next((m["content"] for m in messages if m.get("role") == "user"), "")
         cmd = [self.claude_bin, "-p", "--system-prompt", system, "--settings", "{}", "--strict-mcp-config",
-               "--mcp-config", '{"mcpServers": {}}', "--output-format", "json", "--model", self.model_id, user]
+               "--mcp-config", '{"mcpServers": {}}', "--output-format", "json", "--model", self.model_id]
+        if self.effort:
+            cmd += ["--effort", self.effort]
+        if self.max_budget_usd is not None:
+            cmd += ["--max-budget-usd", str(self.max_budget_usd)]
+        cmd.append(user)
         scratch = tempfile.mkdtemp(prefix="hgi-claude-cli-")
         try:
             proc = subprocess.run(cmd, cwd=scratch, capture_output=True, text=True, timeout=self.timeout)

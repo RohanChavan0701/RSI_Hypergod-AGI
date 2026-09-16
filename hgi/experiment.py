@@ -199,6 +199,18 @@ class ArmSpec(BaseModel):
     seed: str | list[str] | None = None
     """Hand-authored seed stores injected before pass 1, in order (:mod:`hgi.seeds`): each a directory, a path relative
     to the experiment file, or a world name under ``experiments/seeds``. The compare/contrast against the same arm unseeded."""
+    fuse_examiner: bool = False
+    """Opt-in, additive (default ``False`` leaves every arm's separate examiner fan unchanged). When ``True``, the
+    backward pass's attack step (:func:`hgi.consolidate.attack`) folds into the consolidator's own context instead of
+    the examiner's fresh fan: every registered examiner lens is self-critiqued in one further consolidator call (never
+    one fresh call per lens), so the examiner's N-calls-per-draft collapse toward one. Written into the arm's bars as
+    ``fuse_examiner`` (:func:`seed_arm`), read where the pass adjudicates a draft. The adjudicator stays untouched — a
+    separate, fresh context, the admit/decline gate — only attack-generation (the examiner) is folded.
+
+    The trade: the examiner's *structural* independence from the draft (the host law, spec § 8.3 — attacking from a
+    context that never saw the draft being authored) is lost for a self-critique that shares the consolidator's own
+    context and, in a fused arm, its model. Sound only with a strong self-critical teacher; an arm run this way is
+    not comparable to a split-role study (the examiner's claims are no longer an independent read)."""
     description: str = ""
 
     model_config = ConfigDict(extra="forbid")
@@ -395,7 +407,7 @@ def seed_arm(exp: Experiment, arm: str, spec: ArmSpec, root: Path, roster: dict[
     from hgi.genesis import seed
 
     reg = seed(root, model_id=roster["pass"])
-    bars = _merge(_merge(dict(reg.bars), {"consolidation_every_passes": spec.passes_per_round}), spec.bars)
+    bars = _merge(_merge(dict(reg.bars), {"consolidation_every_passes": spec.passes_per_round, "fuse_examiner": spec.fuse_examiner}), spec.bars)
     _registry.write_json(root / "registry" / "bars.json", bars)
     for name in ([spec.seed] if isinstance(spec.seed, str) else spec.seed or []):
         from hgi import seeds as _seeds

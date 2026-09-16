@@ -724,7 +724,18 @@ def settle(attack_payload: dict[str, Any], mechanical: list[dict[str, Any]]) -> 
     return {**attack_payload, "claims": [*mechanical, *kept]}
 
 
-def attack(store: Store, record: Consolidation, draft: Draft, evidence: dict[str, Any], lenses: list[Any] | None = None) -> tuple[dict[str, Any], _model.Completion]:
+SELF_CRITIQUE_INSTRUCTION = (
+    "You wrote this draft as the consolidator; now self-critique it adversarially, exactly as an independent examiner "
+    "would: for every lens listed in `lenses`, take its angle's strongest reading against the draft's payload, warrant, "
+    "or a stated premise, and report the claim honestly — including one that lands against your own draft. A landed "
+    "claim here is what keeps an unsound decision from being minted, not a mark against you."
+)
+"""The instruction folded into a fused attack request (:attr:`hgi.experiment.ArmSpec.fuse_examiner`) — the consolidator's
+prompt describes nominating, not attacking, so the ad hoc instruction carries the job the same way :func:`promote` does."""
+
+
+def attack(store: Store, record: Consolidation, draft: Draft, evidence: dict[str, Any], lenses: list[Any] | None = None,
+           *, fused: bool = False) -> tuple[dict[str, Any], _model.Completion]:
     """The examiner attacks the verbatim draft, one angle per context: each examiner-hosted lens is walked in a fresh call
     and contributes the claims of its own class; the fan's product is their union, each claim naming the angle and the
     call that produced it. A fan walked in one context is a longer prompt, not an ensemble (the fan law), and the
@@ -732,13 +743,36 @@ def attack(store: Store, record: Consolidation, draft: Draft, evidence: dict[str
     A register with no examiner lens falls back to the single-context attack, which is the same product with no angles.
     ``lenses`` names the angles to walk when the caller is not the backward pass — the lens battery's examiner control
     walks one angle at a time; the pass walks the register's.
+
+    ``fused=True`` (opt-in, :attr:`hgi.experiment.ArmSpec.fuse_examiner`) trades the fan for a self-critique: instead of
+    one fresh examiner call per lens, every lens is folded into a *single* further consolidator call — the same product
+    shape (claims naming their lens and call), N examiner calls collapsed toward one. This is the real cost/latency cut
+    (the examiner fan is the biggest per-draft cost); what it gives up is the host law itself — the attack no longer
+    comes from a context structurally independent of the draft, only a self-review of it. Sound only with a strong
+    self-critical model, and an arm run this way is not comparable to a split-role study. The adjudicator is never
+    folded: it stays a fresh, separate context regardless of ``fused``.
     """
     lenses = store.registry.lenses("examiner") if lenses is None else lenses
+    role = "consolidator" if fused else "examiner"
     payload = dict(draft=draft.model_dump(by_alias=True, mode="json"), evidence=evidence)
+    if fused:
+        payload["instruction"] = SELF_CRITIQUE_INSTRUCTION
     if not lenses:
-        c = _model.complete("examiner", roles.request("attack", **payload), session=record.id)
+        c = _model.complete(role, roles.request("attack", **payload), session=record.id)
         out = c.json()
         claims = [x for x in (out.get("claims", []) if isinstance(out, dict) else []) if isinstance(x, dict)]
+        return {"claims": claims, "verdict": "pending"}, c
+    if fused:
+        angles = [{"id": l.id, "angle": l.angle, "counterfactual": l.counterfactual, "claims": l.claims, "product": l.product} for l in lenses]
+        c = _model.complete(role, roles.request("attack", lenses=angles, **payload), session=record.id)
+        out = c.json()
+        claims = []
+        for x in (out.get("claims", []) if isinstance(out, dict) else []):
+            if not isinstance(x, dict):
+                continue
+            target = str(x.get("target", ""))
+            lens_id = x.get("lens") or next((l.id for l in lenses if any(target.startswith(prefix) for prefix in l.claims)), None)
+            claims.append({**x, "lens": lens_id, "call": c.call})
         return {"claims": claims, "verdict": "pending"}, c
     claims, first = [], None
     for lens in lenses:
@@ -788,11 +822,13 @@ def promote(store: Store, record: Consolidation, draft: Draft, evidence: dict[st
     return revised, {"decision": draft.body.decision, "claims": landed, "consolidator_call": c.call}
 
 
-def rewalk(store: Store, record: Consolidation, draft: Draft, evidence: dict[str, Any], attack_payload: dict[str, Any], lens_ids: set[str | None]) -> dict[str, Any]:
+def rewalk(store: Store, record: Consolidation, draft: Draft, evidence: dict[str, Any], attack_payload: dict[str, Any], lens_ids: set[str | None],
+           *, fused: bool = False) -> dict[str, Any]:
     """The angles whose claims a promotion answered are walked again over the revised draft, and their claims replace
-    the stale ones; the code's claims and the other angles' stand. A single-context attack (no lens) is re-run whole."""
+    the stale ones; the code's claims and the other angles' stand. A single-context attack (no lens) is re-run whole.
+    ``fused`` carries the arm's :attr:`hgi.experiment.ArmSpec.fuse_examiner` choice through to the re-walk."""
     lenses = [l for l in store.registry.lenses("examiner") if l.id in lens_ids] or None
-    fresh, _ = attack(store, record, draft, evidence, lenses=lenses)
+    fresh, _ = attack(store, record, draft, evidence, lenses=lenses, fused=fused)
     kept = [c for c in attack_payload["claims"] if c.get("target") in MECHANICAL or c.get("lens") not in lens_ids]
     return {**attack_payload, "claims": [*kept, *fresh["claims"]]}
 
@@ -872,12 +908,17 @@ def adjudicate(store: Store, record: Consolidation, nomination: Nomination, draf
     with no premise kill beside it and the bar met sends the draft back to the consolidator once (:func:`promote`). A
     ``decline`` stands only on an upheld premise kill — a landed ``premise:`` claim the adjudicator declined on; a decline
     with none is overridden to an admit (amended where an amendment was offered), the attack named on the entry and the
-    override on its outcome. Defer and escalate are the adjudicator's as returned."""
+    override on its outcome. Defer and escalate are the adjudicator's as returned.
+
+    The arm's ``fuse_examiner`` bar (:attr:`hgi.experiment.ArmSpec.fuse_examiner`, default off) decides whether the
+    attack is the examiner's fresh fan or the consolidator's self-critique (:func:`attack`); either way the adjudicator
+    below reads the same claim structure and runs in its own fresh context, untouched by the choice."""
     claim = draft.body.decision
     draft, watch = drop_success_watch(store, draft)
     evidence = evidence_pack(store, draft, brief)
     mechanical = [independence_claim(store, draft, evidence), watch]
-    attack_payload, examiner = attack(store, record, draft, evidence)
+    fused = bool(store.registry.bars.get("fuse_examiner", False))
+    attack_payload, examiner = attack(store, record, draft, evidence, fused=fused)
     attack_payload = settle(attack_payload, mechanical)
     landed = [c for c in attack_payload["claims"] if isinstance(c, dict) and c.get("landed")]
     abstraction = [c for c in landed if str(c.get("target", "")).startswith("payload:")]
@@ -885,7 +926,7 @@ def adjudicate(store: Store, record: Consolidation, nomination: Nomination, draf
     if abstraction and all(c in abstraction or c["target"] == "warrant:watch-direction" for c in landed):
         if (revised := promote(store, record, draft, evidence, abstraction)) is not None:
             draft, promotion = revised
-            attack_payload = rewalk(store, record, draft, evidence, attack_payload, {c.get("lens") for c in abstraction})
+            attack_payload = rewalk(store, record, draft, evidence, attack_payload, {c.get("lens") for c in abstraction}, fused=fused)
     v, out, adjudicator = verdict(store, record, draft, attack_payload, evidence)
     amendment = out.get("amendment") if isinstance(out.get("amendment"), str) else None
     rationale = out.get("rationale") if isinstance(out.get("rationale"), str) else None
@@ -898,8 +939,8 @@ def adjudicate(store: Store, record: Consolidation, nomination: Nomination, draf
     entry = LedgerEntry(
         id=store.mint("hypothesis"), at=now(), species="attack", subject=draft.uid, claim=claim,
         proposer=RoleCall(role="consolidator", model_id=_model.model_id("consolidator"), call=record.brief.get("consolidator_call")),
-        contradiction={"source": {"role": "examiner", "model_id": examiner.model_id, "call": examiner.call}, "attack": attack_payload,
-                       "coding": {"promotion": promotion} if promotion else None},
+        contradiction={"source": {"role": "consolidator" if fused else "examiner", "model_id": examiner.model_id, "call": examiner.call},
+                       "attack": attack_payload, "coding": {"promotion": promotion} if promotion else None},
         verdict="premise-killed" if term_head(v) == "decline" else store.registry.route("adjudicator-verdict", v, ATTACK_VERDICTS),
         adjudicator=RoleCall(role="adjudicator", model_id=adjudicator.model_id, call=adjudicator.call),
         amendment=amendment or (draft.body.decision if promotion else None), rationale=rationale, rung=nomination.rung,

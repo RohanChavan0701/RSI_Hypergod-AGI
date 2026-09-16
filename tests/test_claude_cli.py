@@ -54,6 +54,42 @@ def test_the_command_carries_system_prompt_and_json_output_format(monkeypatch):
     assert capture["cwd_empty"] and capture["no_claude_md_up_the_tree"]
 
 
+def test_effort_defaults_to_low_and_is_configurable_by_the_constructor(monkeypatch):
+    capture: dict = {}
+    _run(monkeypatch, stdout=envelope("{}"), capture=capture)
+    _model.ClaudeCLI(model="sonnet").chat(MESSAGES, json_mode=True)
+    cmd = capture["cmd"]
+    assert cmd[cmd.index("--effort") + 1] == "low", "the teacher's latency is the live cost; the default is biased for speed"
+
+    _model.ClaudeCLI(model="sonnet", effort="high").chat(MESSAGES, json_mode=True)
+    assert capture["cmd"][capture["cmd"].index("--effort") + 1] == "high"
+
+
+def test_effort_defaults_from_the_environment(monkeypatch):
+    monkeypatch.setenv("HGI_CLAUDE_CLI_EFFORT", "medium")
+    capture: dict = {}
+    _run(monkeypatch, stdout=envelope("{}"), capture=capture)
+    _model.ClaudeCLI(model="sonnet").chat(MESSAGES, json_mode=True)
+    cmd = capture["cmd"]
+    assert cmd[cmd.index("--effort") + 1] == "medium"
+
+
+def test_max_budget_usd_is_off_by_default_and_settable_via_env_or_constructor(monkeypatch):
+    capture: dict = {}
+    _run(monkeypatch, stdout=envelope("{}"), capture=capture)
+    _model.ClaudeCLI(model="sonnet").chat(MESSAGES, json_mode=True)
+    assert "--max-budget-usd" not in capture["cmd"], "no cap unless one is named"
+
+    monkeypatch.setenv("HGI_CLAUDE_CLI_MAX_BUDGET_USD", "0.5")
+    _model.ClaudeCLI(model="sonnet").chat(MESSAGES, json_mode=True)
+    cmd = capture["cmd"]
+    assert cmd[cmd.index("--max-budget-usd") + 1] == "0.5"
+
+    _model.ClaudeCLI(model="sonnet", max_budget_usd=2.0).chat(MESSAGES, json_mode=True)
+    cmd = capture["cmd"]
+    assert cmd[cmd.index("--max-budget-usd") + 1] == "2.0", "an explicit constructor value wins over the environment"
+
+
 def test_a_well_formed_envelope_parses_to_its_result_field(monkeypatch):
     _run(monkeypatch, stdout=envelope("the consolidator's sketch"))
     backend = _model.ClaudeCLI(model="sonnet")
