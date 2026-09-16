@@ -1808,9 +1808,27 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
       fresh, separate call**). Both trade the examiner's structural fresh-context
       independence (the host law) and reasoning depth for speed/cost, so they make an
       arm non-comparable to the split-role studies — hence flag-gated, non-default.
-      **Left:** a strict-arm scratch pilot on the CLI teacher (measures real
-      consolidation behaviour + end-to-end wall-clock + subscription rate-limits)
-      before merging the branch to `main`.
+      **Pilots run (2026-09-15, scratch, `--no-commit`):** a strict and a lax
+      2-batch arm, actor `gpt-oss-120b` on W&B, every backward role on `claude-cli`
+      sonnet@low, `fuse_examiner` on. **Operationally sound** — ~11 min/arm, exit 0,
+      **zero errors/retries/rate-limits/OAuth** across two full backward passes; the
+      subscription handled sustained backward-pass traffic and the mixed per-role
+      roster (W&B actor + CLI teacher) worked. **But not drop-in, and the fused
+      examiner is still untested live:** both arms admitted nothing and neither
+      reached the attack step — the strict nomination died at hook-edit routing (the
+      item-71 symptom, model-independent), and in the lax arm the sonnet **coder
+      shaped each observation hyper-specifically** (`other(POPLATEK MESICNE coded
+      frequency value used as filter)`, `other(POPLATEK PO OBRATU coded transaction
+      type filter for loan fee)`) so, under exact-match grouping (decision 87), all
+      five groups were single-session and none cleared the 2-session bar — the
+      consolidator had nothing to nominate and the fused self-critique never fired.
+      So the **coder role is acutely model-sensitive**: sonnet's literalism (more
+      accurate labels, but instance-specific) collapses the clustering DeepSeek's
+      generic shapes achieved — precision defeats grouping (deepens items 57/64/71).
+      **Left:** to exercise the fused examiner, keep the *coder* on DeepSeek (the role
+      that must abstract for grouping) and run the rest of the backward pass on the
+      CLI, or apply the item-71 coder-vocab fix / loosen the grouping radius for a CLI
+      coder; then decide on merge. The prototype branch stays unmerged.
 71. **The weak decision-writing is predominantly a contract/vocabulary artifact,
     not a model artifact — root-causing the item 39/49 weak-retrieval symptom to a
     vocabulary-axis mismatch** (2026-09-15, Opus-4.8 clean-room re-mint of the item-70
