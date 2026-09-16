@@ -1468,3 +1468,68 @@ number); it is kept as authored so the cross-references stay valid.
     monitor; and `summary_from_rows` assumes `row_scores` is populated when the summary
     is `None` (true when the flush follows a completed `summarize`; if `summarize` never
     ran, `row_scores` is empty → unevaluable, still no crash).
+103. **A consultation hook may key on a convention, not only a work-shape** (commit
+    `e4f909b`, `tests/test_convention_hook.py`; carry-forward item 71a). The hook
+    vocabulary is now the union of the two axes (`types.HOOK_AXES`): `Term(*vocabs)`
+    accepts a term from either, `Guard.terms`/`WorkShape.terms`/`Sketch.terms` span
+    both, boot `classify` offers both and names the conventions a presentation reveals,
+    `anchor_terms` floors the hook with the convention the evidence was coded into, and
+    `applies_when` offers both axes and never flags a convention pool-universal. The
+    route taken was the *structural* one item 71a named — unblock the existing
+    convention axis as a hook key — not the alternative of adding SQL/query work-shape
+    terms, which would have over-keyed the vocabulary on the instance that surfaced it.
+    *Why it may be right:* the load-bearing failure item 71 root-caused was that a
+    SQL lesson could latch only `shell-tool` (pool-universal in a SQL pool) — a
+    non-discriminating hook; a convention key (`schema-coded-value`) is never
+    pool-universal, so the record gets a hook that selects, and the change is a strict
+    superset (every prior work-shape hook still parses and fires; 774 green). *Why it
+    may not:* a convention is often visible only once the work fails, so a
+    convention-keyed hook does not fire at boot where the presentation hides it — no
+    worse than a work-shape the prompt does not reveal, but not the universal retrieval
+    a naive reading might expect; and offering the convention vocabulary to `classify`
+    invites the model to name conventions from prompts speculatively — bounded by the
+    same "plainly instantiates" discipline the work-shape classification already runs
+    under, and by the guard re-checking at fire time.
+104. **The blind coder prefers a registered convention over escaping** (commit
+    `55e61f1`, `tests/test_coder_convention_discipline.py`; carry-forward item 71b).
+    A prompt-discipline change in `coder.md`: scan the registered `convention`
+    vocabulary before writing any `other(...)`, use a registered term when its
+    world-fact is the one the attempt turned on, and reserve the escape for a genuine
+    gap — binding hardest on the broad label, the one grouping leans on. No mechanical
+    auto-snap (that would corrupt the blind-coding contract). *Why it may be right:*
+    the text2sql run escaped 100% while `schema-coded-value` exactly fit, so the
+    consolidator was handed escapes not conventions (item 71 pt 5); the fix keeps the
+    two guardrails (never force a term that does not fit, never escape one already
+    covered) so it cannot corrupt grouping. *Why it may not:* it is prose discipline,
+    not a floor — a model that still escapes is not mechanically corrected; the
+    escape→mint ladder remains the recovery, and a live re-score is what confirms the
+    discipline holds on the endpoint.
+105. **Grouping never demotes a registered convention** (commit `e4f909b`,
+    `tests/test_convention_hook.py`; carry-forward item 71c). `_demote_presentation_universal`
+    now exempts a registered `convention` label: it names a world-fact axis, not a
+    presentation, so it is the grain at which a logical fault stays coherent, and only
+    escapes and unregistered labels remain eligible for the presentation-universality
+    demotion. *Why it may be right:* the demotion exists to sink a label whose only
+    grouping identity is a term every task carries (a way-of-working an escape landed
+    on); a coherent world-convention is exactly what the demotion must not strand into
+    `other(uncoded)` singletons — the loss item 71 pt 4 names. *Why it may not:* a
+    registered convention that genuinely coincides with a pool-universal presentation
+    across its members is now never demoted on that ground — accepted as the safer
+    error, since a registered convention is a curated world-fact term, not a coarse
+    escape, and the ripeness score still sinks a universal-presentation cluster at
+    ranking time.
+106. **An observation's literal and inference halves stay in one record** (commit
+    `989ce52`, `tests/test_observation_pairing.py`; carry-forward item 71d). The
+    observation lenses (L-0004/L-0009) and the shared lens reply shape now elicit, per
+    failed world-fact, a single finding carrying both the concrete literal (`happened`)
+    and the convention it turned on (`turned_on`); `close._merge_split_findings` is a
+    defensive backstop that folds a clean literal-only/inference-only pair on the same
+    `call` anchor into one, keying only on the shared anchor, never a domain literal.
+    *Why it may be right:* ~45% of the text2sql observations carried `turned_on: null`
+    on exactly the token-bearing rows, splitting the drafting floor's required token
+    from the grouping's required convention (item 71 pt 6); the directive fixes it at
+    source and the merge is a conservative belt (a clean pair only, never dropping a
+    standalone finding). *Why it may not:* the merge is a heuristic — an ambiguous
+    crowd on one anchor is left untouched (both halves then file separately, as before),
+    so the directive, not the backstop, carries the load, and only a live run confirms
+    the model files the one finding.

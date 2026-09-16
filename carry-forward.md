@@ -1888,6 +1888,26 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
       judged even the original DeepSeek teacher would clear most of this. Deepens items
       39, 49; relates to item 70 (the run these observations came from).
 
+**Addressed (2026-09-15).** Item 71's four contract fixes (a)–(d) are built and on
+`main`, each a decision below with its risk: convention terms key consultation
+hooks (a) → decision 103; the blind coder prefers a registered convention over
+escaping (b) → 104; grouping never demotes a coherent registered convention (c) →
+105; an observation's literal and inference halves stay in one record (d) → 106.
+All are *abstractive* — the route for (a) was to unblock the existing convention
+axis as a hook key, not to add SQL/query terms, so nothing is over-keyed on the
+text2sql instance that surfaced them — and the agent-facing phrasing was swept for
+universality (the consolidator/adjudicator key and judge across both axes and a
+shared convention no longer suppresses a distinct fault, the coder and lens
+directives are de-SQL'd into a family-balanced example set, and the vocabulary
+means describe the convention as both grouping and hook axis). Verified offline on
+the stub (774 tests green). **What remains is the live-run confirmation** — that on
+`openai/gpt-oss-120b` + the DeepSeek teacher a convention-keyed hook actually fires
+and retrieves where the convention is presentation-visible, the coder lands on
+registered conventions rather than escaping, the coherent convention groups clear
+the bar, and the single-finding intake holds — a rerun of `experiments/text2sql.toml`
+arm `120b-attached` is the cheapest test, and the item 70 CLI-teacher merge decision
+(keep the coder on DeepSeek) still stands separately.
+
 ## Housekeeping
 
 - `smoke_test.py` is the original W&B/Weave connectivity check and is not
