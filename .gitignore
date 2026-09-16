@@ -53,3 +53,6 @@ wandb/
 
 # --- HGI experiment arms: each a git repository of its own under runs/<experiment>/<arm>/ ---
 runs/
+
+# --- marimo notebook session cache ---
+__marimo__/

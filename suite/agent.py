@@ -148,7 +148,15 @@ class Agent(weave.Model):
         return _envelope(spec.id, tools, result=result, applied=script.applied)
 
     # --- the frozen model in a tool loop ------------------------------------------------
-    def _model(self, task: str, prompt: str, schema: dict, tools: Tools) -> dict[str, Any]:
+    def compose(self, task: str, prompt: str, schema: dict, budgets: dict[str, int]) -> tuple[str, str]:
+        """The two messages the frozen actor sees, and the one place they are assembled.
+
+        The system message layers the fixed ``pass`` prompt, the constitution
+        (``self.articles``), and the consultation plan (``self.records``, each owed
+        an ``apply``); the user message carries the entry — the task prompt, the
+        output schema, and the call budgets. Returned as ``(system, user)`` so a
+        reader can see exactly what is conditioned on without running the loop.
+        """
         from hgi.roles import prompt as role_prompt
 
         context = "\n".join(f"- {a}" for a in self.articles)
@@ -157,8 +165,12 @@ class Agent(weave.Model):
                   "\n\nFinish by replying with one JSON object: {\"result\": ..., \"error\": null | {\"message\": str, \"cause\": str}, "
                   "\"applied\": [record ids you applied]}. The output schema describes that whole object: `result` is the value its `result` "
                   "property describes, never wrapped again. A failed task's error names its root cause; a tool failure you recovered from is not an error.")
-        budgets = "; ".join(f"{k} calls: {v}" for k, v in tools.budgets.items())
-        user = f"Task {task}: {prompt}\nOutput schema: {json.dumps(schema)}" + (f"\nBudgets — {budgets}" if budgets else "")
+        budget_line = "; ".join(f"{k} calls: {v}" for k, v in budgets.items())
+        user = f"Task {task}: {prompt}\nOutput schema: {json.dumps(schema)}" + (f"\nBudgets — {budget_line}" if budget_line else "")
+        return system, user
+
+    def _model(self, task: str, prompt: str, schema: dict, tools: Tools) -> dict[str, Any]:
+        system, user = self.compose(task, prompt, schema, tools.budgets)
         messages: list[dict[str, Any]] = [{"role": "system", "content": system}, {"role": "user", "content": user}]
         malformed_tool_call = False
         final_repairs = 0
