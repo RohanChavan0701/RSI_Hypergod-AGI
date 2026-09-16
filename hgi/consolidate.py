@@ -47,6 +47,7 @@ from hgi.registry import is_escape, route_table, term_head
 from hgi.store import Store, now
 from suite.scorers import SERIES
 from hgi.types import (
+    HOOK_AXES,
     MECHANICAL,
     Consolidation,
     Decision,
@@ -102,15 +103,24 @@ def _demote_presentation_universal(store: Store, by_label: dict[str, list[Observ
     Conservative exactly as the frequency guard was: a label is demoted only when it groups two or more observations and
     the pool holds more than one label, so a pool whose every observation genuinely shares one presentation-keyed
     convention is one real recurrence, kept. An observation left with no surviving group falls to an ``other(uncoded)``
-    singleton so it is never dropped."""
+    singleton so it is never dropped.
+
+    A registered ``convention`` label is never demoted (carry-forward item 71c): it names a world-fact axis — a coded
+    value, a paged listing, a versioned route — not a presentation, so it is a coherent grouping identity even when its
+    members happen to share a pool-universal work-shape. Demotion is for a label whose *only* grouping identity is a term
+    every task presents (an escape a coarse method-word landed on, a way-of-working); a coherent world-convention is the
+    grain a logical fault stays coherent at, and stranding it into ``other(uncoded)`` singletons is exactly the loss item
+    71 names. Only escapes and unregistered labels are eligible for the presentation-universality demotion."""
     if len(by_label) < 2:
         return dict(by_label)
     call_shapes = _call_to_shapes(store)
     universal = pool_universal_terms()
+    registered_conventions = set(store.registry.terms("convention"))
     surviving: dict[str, list[Observation]] = {}
     for label, members in by_label.items():
         member_dicts = [{"anchor": o.anchor.model_dump()} for o in members]
-        if len(members) > 1 and universal and presentation_universality(member_dicts, call_shapes) >= POOL_UNIVERSAL_FRACTION:
+        if (label not in registered_conventions and len(members) > 1 and universal
+                and presentation_universality(member_dicts, call_shapes) >= POOL_UNIVERSAL_FRACTION):
             continue  # demoted: a presentation-universal grouping label groups on what every task carries, not on the world
         surviving[label] = members
     covered = {o.name for members in surviving.values() for o in members}
@@ -952,24 +962,35 @@ def orphaned_edit(store: Store, rung: str, raw: dict[str, Any]) -> bool:
 
 
 def anchor_terms(store: Store, evidence: list[str]) -> list[str]:
-    """The task-declared work-shape terms of the tasks the evidence observations were noticed on — the **floor** on a
-    record's reach, never its ceiling (carry-forward item 57 part 4, demoting economy-run item 39).
+    """The origin terms of the evidence — the **floor** on a record's reach, never its ceiling (carry-forward item 57
+    part 4, demoting economy-run item 39; item 71a giving the hook a legal convention key).
 
-    A record's hook is the consolidator's applies-when judgment (:func:`applies_when`) — the shapes the lesson fires on,
-    biased broad — and these origin terms are the lower bound under it: a record learned from an http-tool task must at
-    least be retrievable for the next http-tool task, so the hook is seeded with the tasks' own declared ``shapes``
-    (``suite.Task.shapes``) whatever the applies-when lens answers. They are a floor, not the whole hook: the lens sets
-    the reach and this only guarantees the origin is inside it, so a hook that once pinned reach to where the lesson was
-    learned no longer defeats transfer by construction. An observation's anchor call resolves to the evaluation row it
-    was noticed on, and that row names the task. Only registered work-shape terms are returned, so the body still parses."""
-    calls = {o.anchor.call for e in evidence if (o := store.observation(e)) is not None and o.anchor.call}
+    Two origins, one per hook axis (:data:`hgi.types.HOOK_AXES`), so the record is at least retrievable where it was learned:
+
+    - the **work-shape** floor — the declared ``shapes`` (``suite.Task.shapes``) of the tasks the evidence observations
+      were noticed on: a record learned from an http-tool task must at least be retrievable for the next http-tool task;
+    - the **convention** floor — the registered ``convention`` terms the evidence observations were coded into (their
+      ``shape``, minus escapes): a record learned about a coded-value or paged-listing convention must at least be
+      retrievable when that convention recurs, not only when the same tool does. This is what item 71a unblocks — before
+      it, the only latchable key was a pool-universal work-shape, so a lesson about a convention keyed nothing that
+      discriminated it.
+
+    Both are a floor, not the whole hook: the applies-when lens (:func:`applies_when`) sets the reach and this only
+    guarantees the origin is inside it, so a hook that once pinned reach to where the lesson was learned no longer defeats
+    transfer. An observation's anchor call resolves to the evaluation row it was noticed on, and that row names the task;
+    its ``shape`` is the convention the grouping coded it into. Only registered terms are returned, so the body still parses."""
+    obs = [o for e in evidence if (o := store.observation(e)) is not None]
+    calls = {o.anchor.call for o in obs if o.anchor.call}
+    convention = set(store.registry.terms("convention"))
+    convention_floor = {sh for o in obs for sh in o.shape if sh in convention}  # the world-fact the evidence was coded into
     if not calls:
-        return []
+        return sorted(convention_floor)
     tasks = {row.get("task") for s in store.all("session") if s.attached and s.evaluation  # type: ignore[attr-defined]
              for row in s.evaluation.rows if row.get("call") in calls and row.get("task")}  # type: ignore[attr-defined]
     registered = set(store.registry.terms("work-shape"))
     by_id = {t.id: t for t in _suite.current().tasks}
-    return sorted({sh for tid in tasks for sh in getattr(by_id.get(tid), "shapes", ()) if sh in registered})
+    work_shape_floor = {sh for tid in tasks for sh in getattr(by_id.get(tid), "shapes", ()) if sh in registered}
+    return sorted(work_shape_floor | convention_floor)
 
 
 def applies_when(store: Store, sketch: Any, evidence: list[str], *, session: str | None = None) -> tuple[list[str], list[str]]:
@@ -982,10 +1003,14 @@ def applies_when(store: Store, sketch: Any, evidence: list[str], *, session: str
     The origin floor is always inside the hook, whatever the lens answers. A broadening onto a pool-universal term — one
     (essentially) every presentation carries (:func:`pool_universal_terms`) — is refused: it would fire on every task and
     select nothing (the item-56 false-ripeness trap); the floor and the sketch's own terms are kept even if universal.
+    Pool-universality is a *work-shape* property (a term every presentation carries); a convention is never pool-universal
+    by construction — it names a world-fact only some tasks exhibit — so a convention key is never caught by the refusal.
+    The vocabulary offered spans both hook axes (:data:`hgi.types.HOOK_AXES`), so the lens may key the hook on the
+    convention the lesson is about, not only the tool the attempt reached for (carry-forward item 71a).
     Returns ``(terms, not_this)`` for the consultation hook.
     """
     floor = anchor_terms(store, evidence)
-    registered = set(store.registry.terms("work-shape"))
+    registered = set(store.registry.terms_over(*HOOK_AXES))
     c = _model.complete("consolidator", roles.request("applies_when", decision=sketch.decision, proposed_terms=list(sketch.terms),
                                                       floor=floor, not_this=list(sketch.not_this), vocabulary=sorted(registered),
                                                       pool_universal=sorted(pool_universal_terms())), session=session)

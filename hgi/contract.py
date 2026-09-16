@@ -35,7 +35,7 @@ from hgi import registry as _registry
 from hgi import reviews as _reviews
 from hgi import roles
 from hgi.store import Store, now
-from hgi.types import Consolidation, Decision, Draft, Session
+from hgi.types import HOOK_AXES, Consolidation, Decision, Draft, Session
 
 Builder = Callable[[Store, Any], tuple[str, str]]
 """(role, request json) for a request name, from the store copy and the parsed arguments."""
@@ -65,7 +65,7 @@ def _rows(session: Session) -> list[dict[str, Any]]:
 
 @builder("classify")
 def _classify(store, args):
-    return "pass", roles.request("classify", presentations=_suite.current().presentations(), terms=store.registry.terms("work-shape"))
+    return "pass", roles.request("classify", presentations=_suite.current().presentations(), terms=store.registry.terms_over(*HOOK_AXES))
 
 
 @builder("guard")

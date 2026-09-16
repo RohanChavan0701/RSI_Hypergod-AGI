@@ -38,13 +38,36 @@ def _registry_for(info: ValidationInfo) -> _registry.Registry:
     return ctx.get("registry") or _registry.current()
 
 
-def Term(vocab: str):  # noqa: N802 — a type constructor
-    """A string constrained to the closed vocabulary ``vocab`` or an ``other(<what>)`` escape."""
+def Term(*vocabs: str):  # noqa: N802 — a type constructor
+    """A string constrained to one of the closed vocabularies ``vocabs`` or an ``other(<what>)`` escape.
+
+    One vocabulary is the common case (``Term("role")``). More than one names a term drawn from a *union* of axes —
+    the value is accepted when any of the vocabularies registers it, so a field can carry a term from either axis without
+    the axes being merged. The hook vocabulary is such a union (:data:`HOOK_AXES`): a consultation hook keys on a term the
+    pass presents, whether that term is a work-shape (the task's shape, the tool it calls) or a convention (the world-fact
+    the work exhibits — a paged listing, a coded value, a versioned route). An escape passes against any axis.
+    """
 
     def _check(value: str, info: ValidationInfo) -> str:
-        return _registry_for(info).check(vocab, value)
+        registry = _registry_for(info)
+        if len(vocabs) == 1:  # the common case: the underlying vocabulary's own message propagates unwrapped
+            return registry.check(vocabs[0], value)
+        errors: list[str] = []
+        for vocab in vocabs:
+            try:
+                return registry.check(vocab, value)
+            except ValueError as e:
+                errors.append(str(e))
+        raise ValueError(f"{value!r} is in none of the vocabularies {list(vocabs)}: " + " / ".join(errors))
 
     return Annotated[str, AfterValidator(_check)]
+
+
+HOOK_AXES = ("work-shape", "convention")
+"""The axes a consultation hook may key on: a term the pass presents is a ``work-shape`` (the task's shape, the tool it
+calls, the fault it meets) or a ``convention`` (the world-fact the work exhibits — a paged listing, a coded value, a
+versioned route). Both are presented before the payload has helped, so both are legal hook keys; the truth-maker the coder
+groups an *observation* on stays the ``convention`` axis alone (see :class:`Observation`)."""
 
 
 ID_PATTERN = re.compile(r"^([A-Z])-(\d{4,})$")
@@ -172,7 +195,10 @@ class Edge(Strict):
 
 
 class Guard(Strict):
-    terms: list[Term("work-shape")] = Field(default_factory=list)
+    terms: list[Term(*HOOK_AXES)] = Field(default_factory=list)
+    """The consultation hook's keys: registered terms the pass presents, from either hook axis (:data:`HOOK_AXES`) — a
+    work-shape or a convention — so a lesson about a world-convention is retrievable on that convention, not only on the
+    tool the attempt reached for."""
     not_this: list[str] = Field(default_factory=list)
     records: list[str] = Field(default_factory=list)
     """For the ``neighbor`` key-space: the record ids whose status change is the edge."""
@@ -214,7 +240,9 @@ class Latch(Strict):
         if self.key_space == "world-state" and self.edge.predicate is None:
             raise ValueError("a world-state latch names a watch predicate")
         if self.key_space == "work-shape" and not self.guard.terms:
-            raise ValueError("a work-shape latch names at least one registered term")
+            # "work-shape" is the presented-terms key-space: the terms the pass presents, spanning both hook axes
+            # (:data:`HOOK_AXES` — a work-shape or a convention). The name is kept for the records already written on it.
+            raise ValueError("a presented-terms latch names at least one registered term")
         if self.key_space == "neighbor" and not self.guard.records:
             raise ValueError("a neighbor latch names at least one record id")
         return self
@@ -492,7 +520,12 @@ class EvaluationResult(Strict):
 # --- session ------------------------------------------------------------------
 
 class WorkShape(Strict):
-    terms: list[Term("work-shape")] = Field(default_factory=list)
+    """The terms the pass presents, read at boot from the task presentations — across both hook axes
+    (:data:`HOOK_AXES`): the tasks' declared work-shapes floor it, and the classification adds the work-shapes and the
+    conventions it reads on top. It is the key-space the stage-one hook index is matched against, so a consultation hook
+    keyed on a convention the presentations exhibit fires here, not only a work-shape one."""
+
+    terms: list[Term(*HOOK_AXES)] = Field(default_factory=list)
     escapes: list[str] = Field(default_factory=list)
 
 

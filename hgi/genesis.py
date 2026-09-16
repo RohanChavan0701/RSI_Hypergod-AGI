@@ -32,8 +32,9 @@ VOCABULARY: dict[str, dict] = {
     "work-shape": {
         "means": "the closed vocabulary of task presentations a consultation hook keys on; minted from the task suite's "
                  "known presentations, which exist ahead of the instances. These are the tool-major cues a boot classify "
-                 "keys a hook on (a task that calls the HTTP tool), coarse by design. This axis routes decision consultation "
-                 "hooks only; observation grouping keys on the separate, instance-grown `convention` axis",
+                 "keys a hook on (a task that calls the HTTP tool), coarse by design. It is one of the two hook axes: a "
+                 "consultation hook keys on a work-shape or on a `convention` (the world-fact the work exhibits), and boot "
+                 "classification presents both; observation grouping still keys on the `convention` axis alone",
         "terms": _terms(
             ("tool-call-retry", "the task involves retrying a tool call that failed transiently"),
             ("http-tool", "the task calls the HTTP tool"),
@@ -49,10 +50,13 @@ VOCABULARY: dict[str, dict] = {
     "convention": {
         "means": "the open, instance-grown vocabulary the blind coder groups observations by: the world-fact an attempt "
                  "turned on, the granularity a lesson recurs at (a route the world has retired to a versioned successor). "
-                 "It cannot be known ahead of the instances, so it grows by the escape→mint ladder rather than being minted "
-                 "at genesis like the tool-major hook axis; the seed terms below are the conventions the suite already knows. "
-                 "Two misses of one convention share a shape and two of different conventions differ even when both called "
-                 "the same tool — which the tool cue alone conflated (shape-radius sweep, decision 77; carry-forward item 57)",
+                 "It grows by the escape→mint ladder rather than being minted whole at genesis like the tool-major axis; the "
+                 "seed terms below are the conventions the suite already knows. Two misses of one convention share a shape "
+                 "and two of different conventions differ even when both called the same tool — which the tool cue alone "
+                 "conflated (shape-radius sweep, decision 77; carry-forward item 57). It is both the grouping axis and, "
+                 "alongside work-shape, a hook axis: a decision whose lesson is about a convention keys its consultation "
+                 "hook on that convention, so it is recalled when the convention recurs, not only on a shared tool "
+                 "(carry-forward item 71a)",
         "terms": _terms(
             ("route-versioned", "a route the world has retired, answering with the versioned successor it moved to"),
             ("listing-paged", "a listing the world returns one page at a time, each page naming the next or its end"),
@@ -76,14 +80,14 @@ VOCABULARY: dict[str, dict] = {
         ),
     },
     "latch-type": {"means": "the typed activation units of § 6.2", "terms": _terms(
-        ("consultation", "keyed on work-shape; polled at boot; the working pass applies the payload"),
+        ("consultation", "keyed on the terms the pass presents — a work-shape or a convention; polled at boot; the working pass applies the payload"),
         ("revisit", "keyed on world-state; the oracle moving; the backward pass re-adjudicates the warrant"),
         ("wiring", "keyed on a neighbour record changing status; propagation re-derives or checks"),
         ("floor", "keyed on the diff or the proposal at commit; the committer's lint checks"),
         ("retirement", "keyed on competence signals at consolidation; the lifecycle review retires or demotes"),
     )},
     "key-space": {"means": "what a latch's guard is matched against", "terms": _terms(
-        ("work-shape", "registered work-shape terms"), ("world-state", "a Weave evaluation, scorer and comparator"),
+        ("work-shape", "registered terms the pass presents, across the work-shape and convention hook axes"), ("world-state", "a Weave evaluation, scorer and comparator"),
         ("neighbor", "record ids"), ("diff", "the proposal or diff under commit"), ("competence", "derived telemetry ratios"),
     )},
     "edge-kind": {"means": "how a latch becomes considered", "terms": _terms(

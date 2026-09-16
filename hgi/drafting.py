@@ -22,7 +22,7 @@ from typing import Any, Literal
 from pydantic import Field, ValidationInfo, model_validator
 
 from hgi import registry as _registry
-from hgi.types import Option, Strict, Term
+from hgi.types import HOOK_AXES, Option, Strict, Term
 
 EVALUATION = "suite-v1"
 WATCH_PERSISTENCE = 2
@@ -85,10 +85,12 @@ _ALLCAPS = re.compile(r"\b[A-Z][A-Z0-9]{2,}\b")
 
 
 def _content_fragments(registry: _registry.Registry) -> set[str]:
-    """The world-mechanism words a decision may name, derived from the registered work-shape vocabulary (not a hand list):
-    each term's fragments, minus the generic ones. So the predicate tracks the vocabulary the store actually carries."""
+    """The world-mechanism words a decision may name, derived from the registered hook vocabulary (not a hand list): each
+    work-shape and convention term's fragments, minus the generic ones. So the predicate tracks the vocabulary the store
+    actually carries, across both hook axes — a decision naming a registered convention (``listing-paged``,
+    ``schema-coded-value``) names a checkable world-mechanism exactly as one naming a work-shape does."""
     frags: set[str] = set()
-    for term in registry.terms("work-shape"):
+    for term in registry.terms_over(*HOOK_AXES):
         frags |= {f for f in re.split(r"[-_]", term) if f}
     return frags - _GENERIC_FRAGMENTS
 
@@ -133,8 +135,10 @@ class Sketch(Strict):
     """The named overshoot — a concrete, plausible alternative failure — citing an observation it was seen in."""
     latch: str
     """The cue: when this record enters context, as prose the router shows before the record opens."""
-    terms: list[Term("work-shape")] = Field(min_length=1)
-    """The hook: registered work-shape terms the consultation latch keys on."""
+    terms: list[Term(*HOOK_AXES)] = Field(min_length=1)
+    """The hook: registered terms the consultation latch keys on, from either hook axis (:data:`hgi.types.HOOK_AXES`) — a
+    work-shape (the task's shape, the tool it calls) or a convention (the world-fact the work exhibits). A lesson about a
+    convention keys on that convention, so it is recalled when the convention recurs, not only when the same tool does."""
     not_this: list[str] = Field(default_factory=list)
     """The router's declared exclusions: presentations the hook must not fire on. Empty at first draft — precision review grows it from ``not_applicable`` notes, so a floor refusal here would only keep the record out of the store where it can be corrected."""
     stakes: str
@@ -210,7 +214,7 @@ SKETCH_REPLY: dict[str, Any] = {
     "decision": "<the payload, one or two sentences, object-decoupled: the transferable shape, never a task or tool name>",
     "counterfactual": "<the overshoot: a concrete alternative failure of following the decision too far, citing an observation name it was seen in or bounded by>",
     "latch": "<the cue: when this record should enter context, as prose>",
-    "terms": ["<a work-shape term from `vocabularies`; the hook>"],
+    "terms": ["<the hook: a term from `vocabularies` the pass presents — a work-shape or the convention the lesson is about>"],
     "not_this": ["<a presentation the hook must not fire on>"],
     "stakes": "<what goes wrong without the record, in the oracle's terms>",
     "context": "<the fork as observed: which sessions, which observations>",

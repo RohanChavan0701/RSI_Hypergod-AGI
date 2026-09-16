@@ -124,13 +124,13 @@ def self_referential(noticed: str, anchor: Any) -> bool:
 # --- projections --------------------------------------------------------------
 
 def hooks(store: Store) -> dict[str, list[dict[str, Any]]]:
-    """Hook-major: for each registered work-shape term, the accepted decisions whose consultation latches carry it.
+    """Hook-major: for each registered hook term, the accepted decisions whose consultation latches carry it.
 
-    An ``other(<what>)`` escape in a guard is legal to write and reaches
-    nothing here: no boot classifies into an escape, so a record keyed only
-    on escapes is a structural zero until the term is minted and the hook
-    re-keyed. A latch is worth exactly as much as the governance of its
-    key-space.
+    A hook term is drawn from either hook axis (:data:`hgi.types.HOOK_AXES`) — a work-shape or a convention — so a lesson
+    keyed on the convention it is about is reached when the boot classification presents that convention, exactly as a
+    work-shape-keyed one is reached on its work-shape. An ``other(<what>)`` escape in a guard is legal to write and reaches
+    nothing here: no boot classifies into an escape, so a record keyed only on escapes is a structural zero until the term
+    is minted and the hook re-keyed. A latch is worth exactly as much as the governance of its key-space.
     """
     out: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for d in store.decisions("accepted"):

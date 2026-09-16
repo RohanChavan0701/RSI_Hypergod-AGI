@@ -146,6 +146,16 @@ class Registry:
     def terms(self, vocab: str) -> list[str]:
         return list(self.vocab(vocab).terms)
 
+    def terms_over(self, *vocabs: str) -> list[str]:
+        """The union of several vocabularies' terms, de-duplicated in first-seen order — the vocabulary a field spanning
+        axes draws from. The hook vocabulary is ``terms_over(*hgi.types.HOOK_AXES)``: the terms a consultation hook may
+        key on, across the work-shape and convention axes."""
+        seen: dict[str, None] = {}
+        for vocab in vocabs:
+            for t in self.terms(vocab):
+                seen.setdefault(t, None)
+        return list(seen)
+
     def add_term(self, vocab: str, term: str, means: str, since: str) -> None:
         """Grow a vocabulary — the route-before-mint ladder's last rung for a term."""
         self.vocab(vocab).terms[term] = {"means": means, "since": since}

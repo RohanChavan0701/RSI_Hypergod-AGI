@@ -92,8 +92,12 @@ def conventions_for(text: str, allowed: list[str]) -> list[str]:
 
 @handles("classify")
 def _classify(req):
+    # The presentation names its work-shape (the tool cue) and, where a convention is visible in the prompt itself — an
+    # inspectable schema, a stated paging contract — that convention too. Both are hook axes; a convention hidden until the
+    # work fails keys nothing here and its hook simply does not fire.
     text = " ".join(p["prompt"] for p in req["presentations"])
-    return {"terms": terms_for(text, req["terms"]), "escapes": []}
+    terms = terms_for(text, req["terms"]) + conventions_for(text, req["terms"])
+    return {"terms": sorted(set(terms)), "escapes": []}
 
 
 @handles("guard")

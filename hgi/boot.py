@@ -31,7 +31,7 @@ from hgi import model as _model
 from hgi import roles
 from hgi import tracing
 from hgi.store import Store, now
-from hgi.types import Considered, Consulted, Decision, LensAnswer, Session, WorkShape
+from hgi.types import HOOK_AXES, Considered, Consulted, Decision, LensAnswer, Session, WorkShape
 import suite as _suite
 
 WORKING_PASS = "the working pass"
@@ -43,14 +43,18 @@ def previous_session(store: Store, pass_: int) -> Session | None:
 
 
 def classify(store: Store, session: Session) -> WorkShape:
-    """Step 3: the pass names its work-shape in registry terms; anything the vocabulary lacks is an escape.
+    """Step 3: the pass names the terms its presentations exhibit, in registry terms; anything the vocabulary lacks is an escape.
 
-    The tasks' declared shapes are the floor of the pass's work-shape and the model's classification adds the
-    convention it reads on top; mirrors ``consolidate.anchor_terms`` seeding a record's hook on the write side.
+    The vocabulary offered spans both hook axes (:data:`hgi.types.HOOK_AXES`): the tasks' declared work-shapes floor the
+    result, and the model's classification adds the work-shapes *and* the conventions it reads on top — a paged listing, a
+    coded value, a versioned route the presentation reveals — so a consultation hook keyed on that convention can fire.
+    Mirrors ``consolidate.anchor_terms`` seeding a record's hook on the write side. A convention hidden in the presentation
+    (visible only once the work fails) is left unnamed, and its hook simply does not fire — the honest floor, no worse than
+    a work-shape the prompt does not reveal.
     """
-    terms = store.registry.terms("work-shape")
+    terms = store.registry.terms_over(*HOOK_AXES)
     c = _model.complete("pass", roles.request("classify", presentations=_suite.current().presentations(), terms=terms), session=session.id, pass_=session.pass_)
-    out = c.json_or({})  # a garbled classify reply reads as no added terms; the tasks' declared shapes still floor the work-shape
+    out = c.json_or({})  # a garbled classify reply reads as no added terms; the tasks' declared shapes still floor the presented terms
     declared = {sh for t in _suite.current().tasks for sh in t.shapes if sh in terms}
     registered = sorted(declared | {t for t in out.get("terms", []) if t in terms})
     escapes = [t for t in out.get("terms", []) if t not in terms and t.startswith("other(")] + list(out.get("escapes", []))
