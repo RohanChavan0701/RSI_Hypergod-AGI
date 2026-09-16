@@ -1735,6 +1735,74 @@ grouping decision 87 shows on the stub holds on `openai/gpt-oss-120b`.
     exists, the `-hard` strict attached arms stay unrun; the seed re-authoring for `(10,16)`
     (decision 100 / owed) is moot for these arms while the pool is saturated.
 
+70. **text2sql is the genuine high-hardness lever the item 66–69 calibration
+    sought; the attached run generates many observations and the
+    observation→decision pipeline sanity-checks correct** (2026-09-15,
+    `experiments/text2sql.toml` arm `120b-attached`, gpt-oss-120b actor +
+    DeepSeek-V4-Pro teacher, batch 6×4 + revisit `[1, 2]`; store under gitignored
+    `runs/text2sql/120b-attached/`). Items 66–69 found reasoning-core saturated
+    across every lever (grammar window, weaker actor, cfg-level → ~0.85–1.0, the
+    "failures" being turn-cap artifacts, not method failures) and asked for "a
+    family whose members need reasoning the actor cannot shortcut." text2sql is
+    that family: SQL over a real BIRD schema, graded by **re-executing** the
+    returned SELECT — a wrong-but-running query fails, and the traps
+    (EXISTS-vs-all, missing GROUP BY/SUM, coded status/frequency literals,
+    district-vs-client scope, wrong year-columns) are genuine reasoning, not
+    verification speed.
+    - **Difficulty confirmed before spending the arm:** a detached 2-batch
+      scratch pilot (same seed 0) landed **0.33 / 0.50** first-sight with
+      `output_schema_valid`/`tool_budget_respected`/`suite_hash` all 1.0 — the
+      failures are real wrong-answer method failures, not harness/budget/schema
+      artifacts.
+    - **The run:** curve `0.33 0.33 0.17 0.17 | 0.17 0.33` (4 first-sight + 2
+      revisit), **40 observations**, two consolidations, two decisions. K-0001
+      (after pass 2) admitted **D-0001** ("inspect the schema to verify table and
+      column names before writing the query") from a group of 10 observations
+      spanning S-0001 *and* S-0002 (clearing the two-session independence bar);
+      K-0002 (after pass 4) admitted **D-0002**, a hook-edit refining the same
+      lesson from 5 more observations, and **declined** an over-reaching
+      aggregation hook-edit as already covered by `schema-coded-value`. D-0001
+      **retrieved** on pass 3 (S-0003 consulted it) — the retrieval the item-49
+      text2sql run never achieved.
+    - **Sanity-check verdict (the four questions):** (1) failed rows mint
+      observations abundantly (16 by pass 2, 40 total; two lenses per failed row
+      via item-64 multi-shape coding); (2) the majority state the world-fact
+      (aggregation-misapplied, wrong table, unverified columns, coded values), a
+      minority are exogenous (budget / "no rule consulted" — items 40/48/66), and
+      all anchor on the failing row's call; (3) accept/refuse is correct —
+      single-session groups refused at the independence floor, the two-session
+      group admitted, the vocabulary over-reach declined, no all-self-referential
+      group to dismiss; (4) the mint is a genuine transferable SQL lesson.
+    - **What it leaves standing.** (a) *Weak transfer:* the revisit passes (5–6)
+      did **not** improve over first sight — the admitted lesson (schema
+      inspection) retrieves but does not fix the *logical* SQL failures
+      (aggregation, coded values) that actually recur; the deeper conventions were
+      not the ones admitted (echoes item 49). (b) *Latch scope:* D-0001 latches on
+      generic tool terms (`file-tool`, `http-tool` — spurious for SQL —
+      `shell-tool`, `tool-budget`) with no SQL-specific hook, item 39/49's
+      retrieval-scope concern (it retrieved anyway via tool-shape overlap). (c) the
+      run converged on one strong lesson, not several distinct conventions.
+    - **Only completed because of the API-hardening (decision 102):** the first
+      attempt crashed at pass 3 on a Weave flush/pairing-timeout (`None` summary →
+      `facts_from` AttributeError); the hardened rerun ran all six passes with no
+      retries or stops. The **experiment-runner** skill now carries the
+      live-monitoring grep and the store sanity-check inspector
+      (`.claude/skills/experiment-runner/inspect_store.py`) used here.
+    - **Cost, and an offload in progress (not on `main`).** Measured per attached
+      arm ≈ **$0.5–1.3** on W&B-Inference prices (a one-off Weave usage query; the
+      repo still prices nothing — item 44), of which the **teacher is ~70%**
+      (DeepSeek runs every backward-pass role at ~10× the actor's per-token price).
+      A `ClaudeCLI` teacher backend (billed to the claude.ai subscription, not
+      per-token) is prototyped and validated at the `hgi roles try` level — valid
+      role JSON, primers stripped, `apiProvider: firstParty` — with **latency
+      (~2 min/call)** the open concern; a flag-gated **fused propose+examine** mode
+      (fold the examiner fan into the consolidator, keep the adjudicator fresh) and
+      an **effort=low** knob (`--effort` on the CLI, `reasoning_effort` on W&B) are
+      being added on a worktree branch, pending a strict-arm pilot. Both trade the
+      examiner's structural fresh-context independence (the host law) and reasoning
+      depth for speed/cost, so they make an arm non-comparable to the split-role
+      studies — hence flag-gated, non-default.
+
 ## Housekeeping
 
 - `smoke_test.py` is the original W&B/Weave connectivity check and is not

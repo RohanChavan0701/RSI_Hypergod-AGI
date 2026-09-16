@@ -1439,3 +1439,32 @@ number); it is kept as authored so the cross-references stay valid.
     only the models it names — confirmed by the identical diff), and a base edit now reaches
     every deriving file at once, which is the point but also a wider blast radius than a
     per-file id; the `experiment.json` pin is what guards a *past* run against that.
+102. **The loop tolerates bad or missing data from its APIs (Weave, the model
+    endpoint) without aborting an arm unrecoverably** (commit `936162b`,
+    `tests/test_api_resilience.py`). A real Weave flush/pairing-timeout (item 34's
+    class) returned a `None` evaluation summary and `evaluate.facts_from` crashed on
+    `summary.get`, killing the text2sql `120b-attached` arm at pass 3 and losing every
+    later pass. Three additive layers answer it: (a) `evaluate.summary_from_rows`
+    rebuilds the scorers' summary from the per-row scores that survive the flush, and
+    `facts_from` guards on `isinstance(summary, dict)` — a `None` or malformed summary
+    reads as unevaluable, never an AttributeError; (b) `model.Completion.json_or(default)`
+    degrades a garbled or wrong-typed reply to the default at the "empty is legal" sites
+    (`boot.classify`, the lens walk, `close`'s `dispose`) — a single bad endpoint reply
+    no longer crashes the pass; (c) `experiment.run_arm` retries the flaky `evaluate`
+    step (`hgi_retry`) and, on a pass that still fails, finalizes the arm gracefully —
+    completed passes committed, the cause recorded in `arm.json`'s `error`, nothing
+    escaping `run_arm`; it catches `SystemExit` (hgi()'s own nonzero-step signal, which
+    is not an `Exception`) as well as `Exception`, leaving `KeyboardInterrupt` to abort.
+    *Why it may be right:* the failure class is exactly the reruns the carry-forward is
+    full of (items 34, 36); the per-row scores are already computed when the summary is
+    lost, so the recovery re-bills nothing; the change is strictly additive (759 tests
+    green, the happy path byte-for-byte unchanged), and the hardened rerun of the same
+    arm completed all six passes with no retries or stops. *Why it may not:* `json_or`
+    could mask a reply that should have been refused — mitigated because the drafting
+    sites still call `json()` and refuse with the field named, and only the
+    contract-empty-legal sites use `json_or`; the graceful stop turns a persistent bug
+    into a recorded `error` rather than a loud crash — mitigated because a `Traceback`
+    is now, by construction, a real bug and the `error` surfaces in `arm.json` and the
+    monitor; and `summary_from_rows` assumes `row_scores` is populated when the summary
+    is `None` (true when the flush follows a completed `summarize`; if `summarize` never
+    ran, `row_scores` is empty → unevaluable, still no crash).
