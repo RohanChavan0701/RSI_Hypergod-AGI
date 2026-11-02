@@ -19,7 +19,7 @@ Files under ``<store>/registry/``:
 
 from __future__ import annotations
 
-import fcntl
+from filelock import FileLock
 import json
 import os
 import re
@@ -176,16 +176,12 @@ class Registry:
         """
         ids_path = self.path("ids")
         ids_path.parent.mkdir(parents=True, exist_ok=True)
-        with (self.dir / ".ids.lock").open("a+") as lock:  # concurrent minters — threads or processes — take turns
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            try:
-                if ids_path.exists():
-                    self.ids = read_json(ids_path)
-                n = self.ids.get(prefix, 0) + 1
-                self.ids[prefix] = n
-                self.save("ids")
-            finally:
-                fcntl.flock(lock, fcntl.LOCK_UN)
+        with FileLock(self.dir / ".ids.lock"):  # concurrent minters — threads or processes — take turns
+            if ids_path.exists():
+                self.ids = read_json(ids_path)
+            n = self.ids.get(prefix, 0) + 1
+            self.ids[prefix] = n
+            self.save("ids")
         return f"{prefix}-{n:04d}"
 
     # --- persistence ---------------------------------------------------

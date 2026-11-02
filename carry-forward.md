@@ -1,5 +1,19 @@
 # Carry-forward
 
+## Windows build status (2026-11-02)
+
+- The Python 3.14 wheel and source archive build successfully; both application
+  packages (`hgi` and `suite`) are included. The CLI starts with `PYTHONUTF8=1`.
+- Store lint passes with 0 failures and 17 genesis-anchor warnings after
+  regenerating the attacker projection.
+- Native Windows validation: 727 tests passed, 63 failed, 1 skipped. Resolve
+  POSIX shell quoting and `python3` selection in the shell tool, Windows paths
+  embedded in TOML, and the remaining experiment/scoring assertions before
+  treating native Windows experiments as supported. Re-run the full suite.
+- Validate the full suite on Linux separately; that platform has not been
+  tested in this checkout. Real inference and tracing require user credentials
+  and have not been exercised.
+
 Future-facing working notes: where the build stands, the work left for the full
 implementation, and housekeeping. The decisions taken along the way — each with
 why it may be right and why it may not — live in `decision-log.md`, so this file

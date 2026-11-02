@@ -20,8 +20,12 @@
   ],
   "overruled": 0,
   "per_angle": {
+    "mechanical": {
+      "claims": 3,
+      "landed": 0
+    },
     "single-context": {
-      "claims": 11,
+      "claims": 8,
       "landed": 0
     }
   },

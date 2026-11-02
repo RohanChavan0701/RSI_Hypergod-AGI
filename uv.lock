@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 
 [[package]]
@@ -475,6 +475,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "altair" },
+    { name = "filelock" },
     { name = "marimo" },
     { name = "nltk" },
     { name = "openai" },
@@ -489,6 +490,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "altair", specifier = ">=6.2.2" },
+    { name = "filelock", specifier = ">=3.32.0" },
     { name = "marimo", specifier = ">=0.24.2" },
     { name = "nltk", specifier = ">=3.9" },
     { name = "openai", specifier = ">=3.13.0" },

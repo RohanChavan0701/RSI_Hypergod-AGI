@@ -10,6 +10,14 @@ number); it is kept as authored so the cross-references stay valid.
 
 ## Decisions taken, and their risk
 
+- **2026-11-02 — Portable ID locks and complete distributions.** Use the
+  explicit `filelock` dependency for the registry counter lock so the CLI can
+  import on Windows while retaining interprocess exclusion. Existing concurrent
+  ID allocation tests pass on Windows; Linux locking still needs validation.
+  Include `suite` alongside `hgi` in the build because the CLI imports both.
+  Keep UTF-8 mode explicit in Windows setup instructions; POSIX shell experiment
+  compatibility remains tracked in `carry-forward.md`.
+
 1. **Decision-only roster.** Beliefs and rules were dropped by instruction;
    the store, ports, bars, lint and projections are written so that adding a
    kind is a new model in `hgi/types.py`, a row in `LAYOUTS`, a port

@@ -140,6 +140,20 @@ Without an inference endpoint the frozen model is replaced by a
 deterministic stub, so the whole loop — boot, evaluate, close, consolidate —
 runs offline and the acceptance tests run under `uv run pytest`.
 
+On Windows PowerShell, enable UTF-8 for the store's Unicode text before running
+commands or tests:
+
+```powershell
+$env:PYTHONUTF8 = "1"
+uv sync --locked
+uv run hgi --help
+uv run pytest
+uv run marimo run dashboard2.py
+```
+
+For an offline stub run, leave `HGI_INFERENCE_BASE_URL` and
+`HGI_WEAVE_PROJECT` unset (or blank in `.env`).
+
 ## Commands
 
 ```
