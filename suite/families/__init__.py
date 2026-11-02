@@ -76,3 +76,4 @@ def family(name: str, source: str, fetch: Callable[[int], list[dict[str, Any]]] 
 
 
 from suite.families import api, conventions, curriculum, genesis, incidents, mbpp, reasoning_core, tables, text2sql, transfer  # noqa: E402,F401 — registration
+from suite.families import workflow_drift  # noqa: E402,F401
