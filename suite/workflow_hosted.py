@@ -8,6 +8,7 @@ from collections import Counter
 from pathlib import Path
 
 import httpx
+from filelock import FileLock
 
 from hgi.cli import load_env
 from suite.workflow_stateful import Request
@@ -85,6 +86,7 @@ def evaluate(client, key, version, destination, memory):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     load_env()
     key = os.getenv("NVIDIA_API_KEY")
@@ -92,15 +94,38 @@ def main():
         parser.error("Configure NVIDIA_API_KEY locally")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     report = {"model": MODEL, "max_turns": MAX_TURNS, "temperature": 0, "rows": []}
-    with args.out.open("x", encoding="utf-8") as stream, httpx.Client(timeout=45) as client:
+    schedule = [(index, arm) for index in range(len(TASKS)) for arm in ("stale", "version-aware")]
+    report["schedule"] = [list(pair) for pair in schedule]
+    report["tasks"] = [list(task) for task in TASKS]
+
+    def save():
+        temporary = args.out.with_suffix(args.out.suffix + ".tmp")
+        temporary.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        temporary.replace(args.out)
+
+    with FileLock(str(args.out.resolve()) + ".lock", timeout=0), httpx.Client(timeout=45) as client:
+        if args.resume:
+            previous = json.loads(args.out.read_text(encoding="utf-8"))
+            if any(previous.get(name) != value for name, value in report.items() if name != "rows"):
+                parser.error("Checkpoint configuration differs")
+            rows = previous["rows"]
+            if [(row["task"], row["arm"]) for row in rows] != schedule[:len(rows)]:
+                parser.error("Checkpoint rows do not match the schedule")
+            report["rows"] = rows
+        elif args.out.exists():
+            parser.error("Output already exists. Use --resume or choose a new path.")
+        save()
         for index, (version, destination) in enumerate(TASKS):
             for arm, memory in (
                 ("stale", " Stored rule: execute once the destination is known."),
                 ("version-aware", " Stored rules: v1 requires only a destination. "
                  "v2 requires a destination and approval before execution."),
             ):
+                if (index, arm) in schedule[:len(report["rows"])]:
+                    continue
                 row = evaluate(client, key, version, destination, memory)
                 report["rows"].append(dict(row, arm=arm, task=index))
+                save()
                 print(f"{arm} {version} {row['outcome']}", flush=True)
         report["summary"] = {}
         for arm in ("stale", "version-aware"):
@@ -113,7 +138,7 @@ def main():
                 "reported_tokens": sum(row["tokens"] for row in rows),
                 "calls_missing_usage": sum(call["tokens"] is None for call in calls),
             }
-        json.dump(report, stream, indent=2)
+        save()
 
 
 if __name__ == "__main__":
