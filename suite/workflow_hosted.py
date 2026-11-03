@@ -25,7 +25,7 @@ LARGER_TASKS = tuple(
 MAX_TURNS = 4
 
 
-def evaluate(client, key, version, destination, memory):
+def evaluate(client, key, version, destination, memory, conversation=None):
     request = Request(version, destination)
     messages = [{"role": "system", "content": (
         "Complete the simulated shipment. Return exactly one JSON object "
@@ -33,6 +33,9 @@ def evaluate(client, key, version, destination, memory):
         "Clarify obtains a missing destination. Request_approval obtains approval."
         + memory
     )}]
+    if conversation is not None:
+        messages.extend(conversation)
+        offset = len(messages)
     tokens = 0
     calls = []
     outcome = "turn_limit"
@@ -83,6 +86,8 @@ def evaluate(client, key, version, destination, memory):
         if request.executed:
             outcome = "success"
             break
+    if conversation is not None:
+        conversation.extend(messages[offset:])
     return {"version": version, "initial_destination": destination, "outcome": outcome,
             "violations": request.violations, "tokens": tokens, "trace": request.events,
             "calls": calls}

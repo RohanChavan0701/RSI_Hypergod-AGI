@@ -1,0 +1,312 @@
+{
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "max_turns_per_phase": 4,
+  "arms": {
+    "history": [
+      {
+        "version": "v1",
+        "initial_destination": "east",
+        "outcome": "invalid_action",
+        "violations": 1,
+        "tokens": 249,
+        "trace": [
+          {
+            "tool": "request_approval",
+            "destination": "east",
+            "approved": false,
+            "executed": false,
+            "violations": 1
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 249,
+            "status": "response",
+            "latency_ms": 994
+          }
+        ],
+        "phase": "A_initial",
+        "lesson": "",
+        "feedback": "Execute once the destination is known."
+      },
+      {
+        "version": "v2",
+        "initial_destination": null,
+        "outcome": "success",
+        "violations": 0,
+        "tokens": 1129,
+        "trace": [
+          {
+            "tool": "clarify",
+            "destination": "west",
+            "approved": false,
+            "executed": false,
+            "violations": 0
+          },
+          {
+            "tool": "request_approval",
+            "destination": "west",
+            "approved": true,
+            "executed": false,
+            "violations": 0
+          },
+          {
+            "tool": "execute",
+            "destination": "west",
+            "approved": true,
+            "executed": true,
+            "violations": 0
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 291,
+            "status": "response",
+            "latency_ms": 705
+          },
+          {
+            "turn": 2,
+            "tokens": 378,
+            "status": "response",
+            "latency_ms": 800
+          },
+          {
+            "turn": 3,
+            "tokens": 460,
+            "status": "response",
+            "latency_ms": 1951
+          }
+        ],
+        "phase": "B_switch",
+        "lesson": "",
+        "feedback": "Obtain approval after resolving the destination, then execute."
+      },
+      {
+        "version": "v1",
+        "initial_destination": "west",
+        "outcome": "invalid_output",
+        "violations": 0,
+        "tokens": 1408,
+        "trace": [],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 1408,
+            "status": "invalid_output",
+            "latency_ms": 5733
+          }
+        ],
+        "phase": "A_return",
+        "lesson": "",
+        "feedback": "Execute once the destination is known."
+      }
+    ],
+    "fixed": [
+      {
+        "version": "v1",
+        "initial_destination": "east",
+        "outcome": "invalid_action",
+        "violations": 1,
+        "tokens": 330,
+        "trace": [
+          {
+            "tool": "request_approval",
+            "destination": "east",
+            "approved": false,
+            "executed": false,
+            "violations": 1
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 330,
+            "status": "response",
+            "latency_ms": 1121
+          }
+        ],
+        "phase": "A_initial",
+        "lesson": "Stored lesson: execute once the destination is known.",
+        "feedback": "Execute once the destination is known."
+      },
+      {
+        "version": "v2",
+        "initial_destination": null,
+        "outcome": "invalid_action",
+        "violations": 1,
+        "tokens": 1371,
+        "trace": [
+          {
+            "tool": "clarify",
+            "destination": "west",
+            "approved": false,
+            "executed": false,
+            "violations": 0
+          },
+          {
+            "tool": "execute",
+            "destination": "west",
+            "approved": false,
+            "executed": false,
+            "violations": 1
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 312,
+            "status": "response",
+            "latency_ms": 9246
+          },
+          {
+            "turn": 2,
+            "tokens": 1059,
+            "status": "response",
+            "latency_ms": 4497
+          }
+        ],
+        "phase": "B_switch",
+        "lesson": "Stored lesson: execute once the destination is known.",
+        "feedback": "Obtain approval after resolving the destination, then execute."
+      },
+      {
+        "version": "v1",
+        "initial_destination": "west",
+        "outcome": "invalid_action",
+        "violations": 1,
+        "tokens": 479,
+        "trace": [
+          {
+            "tool": "request_approval",
+            "destination": "west",
+            "approved": false,
+            "executed": false,
+            "violations": 1
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 479,
+            "status": "response",
+            "latency_ms": 2066
+          }
+        ],
+        "phase": "A_return",
+        "lesson": "Stored lesson: execute once the destination is known.",
+        "feedback": "Execute once the destination is known."
+      }
+    ],
+    "updated": [
+      {
+        "version": "v1",
+        "initial_destination": "east",
+        "outcome": "invalid_action",
+        "violations": 1,
+        "tokens": 247,
+        "trace": [
+          {
+            "tool": "request_approval",
+            "destination": "east",
+            "approved": false,
+            "executed": false,
+            "violations": 1
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 247,
+            "status": "response",
+            "latency_ms": 1028
+          }
+        ],
+        "phase": "A_initial",
+        "lesson": "",
+        "feedback": "Execute once the destination is known."
+      },
+      {
+        "version": "v2",
+        "initial_destination": null,
+        "outcome": "success",
+        "violations": 0,
+        "tokens": 1163,
+        "trace": [
+          {
+            "tool": "clarify",
+            "destination": "west",
+            "approved": false,
+            "executed": false,
+            "violations": 0
+          },
+          {
+            "tool": "request_approval",
+            "destination": "west",
+            "approved": true,
+            "executed": false,
+            "violations": 0
+          },
+          {
+            "tool": "execute",
+            "destination": "west",
+            "approved": true,
+            "executed": true,
+            "violations": 0
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 291,
+            "status": "response",
+            "latency_ms": 853
+          },
+          {
+            "turn": 2,
+            "tokens": 378,
+            "status": "response",
+            "latency_ms": 904
+          },
+          {
+            "turn": 3,
+            "tokens": 494,
+            "status": "response",
+            "latency_ms": 1302
+          }
+        ],
+        "phase": "B_switch",
+        "lesson": "",
+        "feedback": "Obtain approval after resolving the destination, then execute."
+      },
+      {
+        "version": "v1",
+        "initial_destination": "west",
+        "outcome": "success",
+        "violations": 0,
+        "tokens": 1169,
+        "trace": [
+          {
+            "tool": "execute",
+            "destination": "west",
+            "approved": false,
+            "executed": true,
+            "violations": 0
+          }
+        ],
+        "calls": [
+          {
+            "turn": 1,
+            "tokens": 1169,
+            "status": "response",
+            "latency_ms": 3878
+          }
+        ],
+        "phase": "A_return",
+        "lesson": "Stored lesson: Execute once the destination is known.",
+        "feedback": "Execute once the destination is known."
+      }
+    ]
+  }
+}
