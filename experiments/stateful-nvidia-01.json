@@ -1,0 +1,136 @@
+{
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "max_turns": 4,
+  "temperature": 0,
+  "rows": [
+    {
+      "version": "v1",
+      "initial_destination": "east",
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 281,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "east",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "arm": "stale",
+      "task": 0
+    },
+    {
+      "version": "v1",
+      "initial_destination": "east",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 294,
+      "trace": [
+        {
+          "tool": "execute",
+          "destination": "east",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "arm": "version-aware",
+      "task": 0
+    },
+    {
+      "version": "v2",
+      "initial_destination": null,
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 1251,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "arm": "stale",
+      "task": 1
+    },
+    {
+      "version": "v2",
+      "initial_destination": null,
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 1138,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "request_approval",
+          "destination": "west",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "arm": "version-aware",
+      "task": 1
+    },
+    {
+      "version": "v1",
+      "initial_destination": "west",
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 267,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "arm": "stale",
+      "task": 2
+    },
+    {
+      "version": "v1",
+      "initial_destination": "west",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 311,
+      "trace": [
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "arm": "version-aware",
+      "task": 2
+    }
+  ]
+}

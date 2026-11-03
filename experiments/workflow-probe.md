@@ -1,5 +1,30 @@
 # Conditional workflow probe
 
+### Hosted stateful pilot
+
+Run `python -m suite.workflow_hosted --out .cache/stateful-nvidia-new.json`
+with `NVIDIA_API_KEY` configured. Each turn applies one model-selected
+action to the mock API and returns the updated state. The simulator rejects
+execution without a destination or required approval. It also treats
+unnecessary approval requests in v1 as invalid actions.
+
+| Arm | Completed tasks | Invalid actions | Reported tokens |
+|---|---:|---:|---:|
+| Stale lesson | 0/3 | 3 | 1,799 |
+| Version-aware lesson | 3/3 | 0 | 1,743 |
+
+Both arms received the same v1, v2, v1 requests and four-turn budget.
+The stale arm requested approval on v1 and attempted unapproved execution
+on v2. The version-aware arm executed both v1 requests and completed
+clarification, approval, and execution on v2. See
+[`stateful-nvidia-01.json`](stateful-nvidia-01.json) for the recorded
+state transitions. No requests timed out.
+
+This pilot compares hand-written memory on three synthetic requests.
+Each request has its own conversation, so the return to v1 measures
+application of the supplied rule. Held-out families, continuous episode
+memory, and the Verifiers adapter remain open.
+
 ### Trace-to-strategy pilot
 
 The offline learner exports its development predictions and grader labels
