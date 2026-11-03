@@ -1,5 +1,25 @@
 # Conditional workflow probe
 
+### Trace-to-strategy pilot
+
+The offline learner exports its development predictions and grader labels
+with `python -m suite.workflow_meta --development-traces`. Given those
+traces, NVIDIA Nemotron chose `max_width=2` from the allowed widths 1, 2,
+and 3. It identified a two-feature XOR rule. The proposal took one call
+with 2,874 reported tokens. The frozen proposal can be replayed with
+`python -m suite.workflow_meta --proposal <json-file>`, where the JSON
+contains `{"max_width": 2}`.
+
+| Held-out stream | Fixed width 1 | Development-selected | Nemotron proposal |
+|---|---:|---:|---:|
+| Single feature | 14/16 | 14/16 | 14/16 |
+| Feature interaction | 0/16 | 12/16 | 12/16 |
+
+The proposal matched the development-selected strategy exactly. Each arm
+received the same 16 labels per stream. The streams reset experience and
+reuse input combinations within a stream. Retention across workflow
+switches requires a separate experiment.
+
 This is an action-selection benchmark, not an API execution benchmark. The
 existing Task and family interfaces expose 12 cases in each of
 `workflow-experience`, `workflow-selection`, and `workflow-test`.
