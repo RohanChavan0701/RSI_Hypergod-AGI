@@ -25,10 +25,11 @@ LARGER_TASKS = tuple(
 MAX_TURNS = 4
 
 
-def evaluate(client, key, version, destination, memory, conversation=None, tool_note=None):
+def evaluate(client, key, version, destination, memory, conversation=None, tool_note=None,
+             task_description="shipment"):
     request = Request(version, destination)
     messages = [{"role": "system", "content": (
-        "Complete the simulated shipment. Return exactly one JSON object "
+        f"Complete the simulated {task_description}. Return exactly one JSON object "
         'with key "tool" and value clarify, request_approval, or execute. '
         "Clarify obtains a missing destination. Request_approval obtains approval."
         + memory
