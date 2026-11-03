@@ -23,13 +23,27 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=1, choices=range(1, 13))
     parser.add_argument("--memory", choices=("none", "broad", "scoped", "feedback"), default="none")
     parser.add_argument("--recall", action="store_true", help="Evaluate drift without worked examples")
+    parser.add_argument("--learn-from", type=Path, help="Induce a version-scoped rule from prior graded drift rows")
+    parser.add_argument("--offset", type=int, default=0, help="Starting item number for drift requests")
     parser.add_argument("--examples", action="store_true")
     parser.add_argument("--drift", action="store_true", help="Probe v1, v2, then revisit v1")
     parser.add_argument("--out", type=Path, default=Path(".cache/workflow-pilot.json"))
     args = parser.parse_args()
+    if args.offset < 0:
+        parser.error("--offset must be nonnegative")
     if (args.recall or args.memory == "feedback") and not args.drift:
         parser.error("Recall and feedback require --drift")
     feedback = {"v1": "execute", "v2": "confirm"} if args.memory == "feedback" else {}
+    if args.learn_from:
+        if not (args.drift and args.recall and args.memory == "none"):
+            parser.error("--learn-from requires --drift --recall with no seeded memory")
+        training = json.loads(args.learn_from.read_text(encoding="utf-8"))
+        labels = {}
+        for row in training["rows"]:
+            labels.setdefault(row["version"], set()).add(row["expected_action"])
+        if not labels or any(len(actions) != 1 for actions in labels.values()):
+            parser.error("Training requires consistent action labels within each version")
+        feedback = {version: next(iter(actions)) for version, actions in labels.items()}
     result_memory = args.memory
     load_env()
     nvidia = args.provider == "nvidia"
@@ -46,7 +60,9 @@ def main() -> None:
     result = {"kind": "real-model-no-memory-pilot", "model": args.model,
               "split": "experience", "temperature": 0, "max_tokens": 1024,
               "started_at": datetime.now(timezone.utc).isoformat(), "rows": []}
-    result["memory"] = result_memory
+    result["memory"] = "learned" if args.learn_from else result_memory
+    result["training_source"] = args.learn_from.name if args.learn_from else None
+    result["offset"] = args.offset
     result["provider"] = args.provider
     result["examples"] = args.examples
     result["drift"] = args.drift
@@ -98,7 +114,7 @@ def main() -> None:
                           + task.prompt.split(" Request: ", 1)[1])
             if args.drift:
                 version = ("v1", "v2", "v2", "v1")[index % 4]
-                arguments = {"item": f"item-{index}", "destination": "west"}
+                arguments = {"item": f"item-{index + args.offset}", "destination": "west"}
                 expected_action = "execute" if version == "v1" else "confirm"
                 active = args.memory == "broad" or (args.memory == "scoped" and version == "v1")
                 lesson = " Stored workflow lesson: execute complete requests without asking for approval." if active else ""

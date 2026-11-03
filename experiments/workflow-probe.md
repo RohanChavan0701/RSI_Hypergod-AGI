@@ -24,6 +24,28 @@ feedback arm uses a hand-authored mapping from versions to correct actions.
 These four synthetic cases test retrieval of that mapping. Automatic lesson
 generation and generalization to new workflows remain future experiments.
 
+### Learning from graded feedback
+
+The runner can infer a version-to-action mapping from the prior no-memory
+run's grader labels. It rejects conflicting labels within a version. The
+following command fits the mapping from the first run and evaluates it on
+requests with new item identifiers.
+
+```powershell
+python -m suite.workflow_pilot --provider nvidia --drift --recall --limit 4 --offset 100 --learn-from .cache/nvidia-recall-none-01.json --out .cache/nvidia-learn-learned-01.json
+```
+
+| Condition | v1 correct | v2 correct | Total |
+|---|---:|---:|---:|
+| No memory | 0/2 | 2/2 | 2/4 |
+| Stale v1 lesson | 2/2 | 0/2 | 2/4 |
+| Mapping learned from grader labels | 2/2 | 2/2 | 4/4 |
+
+Version is a programmer-selected input feature, and the evaluation changes
+item identifiers while retaining the same template and two rules. This run
+tests transfer to new inputs within the same workflow. Learning an activation
+condition from competing features and generalizing to new workflows are open.
+
 The splits use different operation names and prompt templates. All share an
 explicit conditional decision contract; this measures condition following and
 interference from future memories, not discovery of a hidden environment rule.
