@@ -3,6 +3,8 @@
 import argparse
 import json
 import os
+import time
+from collections import Counter
 from pathlib import Path
 
 import httpx
@@ -26,12 +28,16 @@ def evaluate(client, key, version, destination, memory):
         + memory
     )}]
     tokens = 0
+    calls = []
     outcome = "turn_limit"
     for _ in range(MAX_TURNS):
+        call = {"turn": len(calls) + 1, "tokens": None, "status": "response"}
+        calls.append(call)
         messages.append({"role": "user", "content": json.dumps({
             "version": version, "destination": request.destination, "approved": request.approved,
             "last_event": request.events[-1] if request.events else None,
         })})
+        started = time.monotonic()
         try:
             response = client.post(ENDPOINT, headers={"Authorization": f"Bearer {key}"}, json={
                 "model": MODEL, "temperature": 0, "max_tokens": 1024, "messages": messages,
@@ -46,9 +52,14 @@ def evaluate(client, key, version, destination, memory):
         except httpx.RequestError:
             outcome = "transport_error"
             break
+        finally:
+            call["latency_ms"] = round((time.monotonic() - started) * 1000)
+            if outcome != "turn_limit":
+                call["status"] = outcome
         try:
             body = response.json()
-            tokens += (body.get("usage") or {}).get("total_tokens") or 0
+            call["tokens"] = (body.get("usage") or {}).get("total_tokens")
+            tokens += call["tokens"] or 0
             reply = body["choices"][0]["message"]["content"]
             parsed = json.loads(reply)
             tool = parsed["tool"]
@@ -56,6 +67,7 @@ def evaluate(client, key, version, destination, memory):
                 raise ValueError
         except (ValueError, KeyError, IndexError, TypeError):
             outcome = "invalid_output"
+            call["status"] = outcome
             break
         messages.append({"role": "assistant", "content": reply})
         request.call(tool)
@@ -66,7 +78,8 @@ def evaluate(client, key, version, destination, memory):
             outcome = "success"
             break
     return {"version": version, "initial_destination": destination, "outcome": outcome,
-            "violations": request.violations, "tokens": tokens, "trace": request.events}
+            "violations": request.violations, "tokens": tokens, "trace": request.events,
+            "calls": calls}
 
 
 def main():
@@ -89,6 +102,17 @@ def main():
                 row = evaluate(client, key, version, destination, memory)
                 report["rows"].append(dict(row, arm=arm, task=index))
                 print(f"{arm} {version} {row['outcome']}", flush=True)
+        report["summary"] = {}
+        for arm in ("stale", "version-aware"):
+            rows = [row for row in report["rows"] if row["arm"] == arm]
+            calls = [call for row in rows for call in row["calls"]]
+            report["summary"][arm] = {
+                "outcomes": dict(Counter(row["outcome"] for row in rows)),
+                "calls": len(calls),
+                "latency_ms_total": sum(call["latency_ms"] for call in calls),
+                "reported_tokens": sum(row["tokens"] for row in rows),
+                "calls_missing_usage": sum(call["tokens"] is None for call in calls),
+            }
         json.dump(report, stream, indent=2)
 
 
