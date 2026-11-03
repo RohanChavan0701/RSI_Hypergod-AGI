@@ -46,6 +46,21 @@ item identifiers while retaining the same template and two rules. This run
 tests transfer to new inputs within the same workflow. Learning an activation
 condition from competing features and generalizing to new workflows are open.
 
+### Discovering which feature controls recall
+
+Use `--discover-scope` with a graded drift run that records version,
+operation, and destination. Each candidate field must cover both allowed
+values and give one consistent action per value. The runner rejects
+ambiguous evidence and overlapping training and evaluation item ranges.
+
+On four NVIDIA training requests (items 200–203), the no-memory model
+answered 2/4 correctly. The grader labels uniquely selected version over
+operation and destination. With the learned mapping, NVIDIA answered
+3/3 completed evaluation requests correctly (items 300–302). The fourth
+request timed out. A retry timed out before producing a graded response.
+This is a partial evaluation on the same synthetic workflow, with three
+candidate features supplied by the experiment designer.
+
 The splits use different operation names and prompt templates. All share an
 explicit conditional decision contract; this measures condition following and
 interference from future memories, not discovery of a hidden environment rule.
