@@ -5,6 +5,19 @@ from copy import deepcopy
 from suite.families import FAMILIES
 from suite.families.workflow_drift import OPERATIONS, cases, tasks_for
 from suite.tasks import SuiteSpec, build
+from suite.workflow_pilot import transfer_features
+
+
+def test_transfer_destination_determines_action_across_versions_and_operations():
+    rows = [transfer_features(index) for index in range(8)]
+    assert len({tuple(features.values()) for features, _ in rows}) == 8
+    for field in ("version", "operation"):
+        for value in {features[field] for features, _ in rows}:
+            assert {action for features, action in rows if features[field] == value} == {
+                "execute", "confirm",
+            }
+    for features, action in rows:
+        assert action == {"west": "execute", "east": "confirm"}[features["destination"]]
 
 
 def test_disjoint_operations_and_unique_tasks():

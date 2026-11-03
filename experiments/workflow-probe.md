@@ -61,6 +61,27 @@ request timed out. A retry timed out before producing a graded response.
 This is a partial evaluation on the same synthetic workflow, with three
 candidate features supplied by the experiment designer.
 
+### Transfer to a destination-controlled workflow
+
+Run with `--transfer --drift --recall --limit 8` to cross both values of
+version, operation, and destination. The grader uses destination to select
+the action. The learner receives all three features and the grader labels.
+Fit from one item range with `--learn-from` and `--discover-scope`, then
+evaluate on a disjoint range. Use the same flags and output path with
+`--resume` to continue an interrupted run.
+
+In the NVIDIA pilot, items 400–407 supplied training labels and items
+500–507 were used for all evaluation conditions.
+
+| Memory on the new workflow | Correct |
+|---|---:|
+| No memory | 4/8 |
+| Stale version rule | 4/8 |
+| Learned destination rule | 8/8 |
+
+The runner selected destination from three supplied features. The evaluation
+used fresh item identifiers and the same synthetic workflow template.
+
 The splits use different operation names and prompt templates. All share an
 explicit conditional decision contract; this measures condition following and
 interference from future memories, not discovery of a hidden environment rule.

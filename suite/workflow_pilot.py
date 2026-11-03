@@ -11,9 +11,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
+from filelock import FileLock, Timeout
 
 from hgi.cli import load_env
 from suite.families.workflow_drift import cases, tasks_for
+
+
+def transfer_features(index: int) -> tuple[dict[str, str], str]:
+    """Cross all three binary features before repeating any combination."""
+    features = {
+        "version": ("v1", "v2")[index % 2],
+        "operation": ("transfer", "dispatch")[(index // 2) % 2],
+        "destination": ("west", "east")[(index // 4) % 2],
+    }
+    return features, "execute" if features["destination"] == "west" else "confirm"
 
 
 def main() -> None:
@@ -28,10 +39,14 @@ def main() -> None:
     parser.add_argument("--offset", type=int, default=0, help="Starting item number for drift requests")
     parser.add_argument("--examples", action="store_true")
     parser.add_argument("--drift", action="store_true", help="Probe v1, v2, then revisit v1")
+    parser.add_argument("--transfer", action="store_true", help="Use destination to determine the correct action")
     parser.add_argument("--out", type=Path, default=Path(".cache/workflow-pilot.json"))
+    parser.add_argument("--resume", action="store_true", help="Continue an existing matching report")
     args = parser.parse_args()
     if args.offset < 0:
         parser.error("--offset must be nonnegative")
+    if args.transfer and not (args.drift and args.recall):
+        parser.error("--transfer requires --drift --recall")
     if (args.recall or args.memory == "feedback") and not args.drift:
         parser.error("Recall and feedback require --drift")
     feedback = {"v1": "execute", "v2": "confirm"} if args.memory == "feedback" else {}
@@ -83,8 +98,6 @@ def main() -> None:
         raise SystemExit(f"Configure {key_name} locally first.")
     if (nvidia and args.model != nvidia_model) or (not nvidia and not args.model.endswith(":free")):
         raise SystemExit("Only explicitly free model IDs are allowed.")
-    if args.out.exists():
-        raise SystemExit("Output already exists; select a new path to preserve the earlier run.")
     result = {"kind": "real-model-no-memory-pilot", "model": args.model,
               "split": "experience", "temperature": 0, "max_tokens": 1024,
               "started_at": datetime.now(timezone.utc).isoformat(), "rows": []}
@@ -94,10 +107,44 @@ def main() -> None:
     result["provider"] = args.provider
     result["examples"] = args.examples
     result["drift"] = args.drift
+    result["transfer"] = args.transfer
     result["recall"] = args.recall
     result["feedback_memory"] = feedback
     result["learned_scope"] = scope if args.learn_from else None
+    result["requested"] = args.limit
     args.out.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with FileLock(str(args.out.resolve()) + ".lock", timeout=0):
+            run(args, key, nvidia, scope, feedback, result)
+    except Timeout:
+        raise SystemExit("Output is locked by another pilot run.") from None
+
+
+def run(args, key, nvidia, scope, feedback, result):
+    if args.resume:
+        try:
+            previous = json.loads(args.out.read_text(encoding="utf-8"))
+            config = {name: value for name, value in result.items() if name not in {"rows", "started_at"}}
+            # Older reports stored the requested count in their final summary.
+            previous.setdefault("transfer", False)
+            if "requested" not in previous and isinstance(previous.get("summary"), dict):
+                previous["requested"] = previous["summary"].get("requested")
+            if any(previous.get(name) != value for name, value in config.items()):
+                raise ValueError("configuration differs")
+            rows = previous["rows"]
+            task_ids = [task.id for task in tasks_for("experience")[:args.limit]]
+            if (not isinstance(rows, list) or len(rows) > args.limit
+                    or [row["task"] for row in rows] != task_ids[:len(rows)]
+                    or any(type(row["passed"]) is not bool for row in rows)):
+                raise ValueError("completed rows do not match the expected task prefix")
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as error:
+            raise SystemExit(f"Cannot resume output: {error}") from None
+        result = previous
+        for field in ("stopped_reason", "provider_error", "retry_after", "summary"):
+            result.pop(field, None)
+        print(f"Resuming after {len(rows)} of {args.limit} completed cases.", flush=True)
+    elif args.out.exists():
+        raise SystemExit("Output already exists; use --resume or select a new path.")
 
     def save():
         temporary = args.out.with_suffix(args.out.suffix + ".tmp")
@@ -105,14 +152,15 @@ def main() -> None:
         temporary.replace(args.out)
 
     with httpx.Client(timeout=90) as client:
+        verify_catalog = not nvidia and len(result["rows"]) < args.limit
         try:
-            if not nvidia:
+            if verify_catalog:
                 catalog = client.get("https://openrouter.ai/api/v1/models")
                 catalog.raise_for_status()
                 entry = next((m for m in catalog.json()["data"] if m["id"] == args.model), None)
         except (httpx.HTTPError, ValueError, KeyError):
             raise SystemExit("Unable to verify model catalog; no inference requested.") from None
-        if not nvidia:
+        if verify_catalog:
             if not entry or any(float(entry["pricing"][k]) != 0 for k in ("prompt", "completion")):
                 raise SystemExit("Selected model is unavailable or not zero-priced; stopping.")
             result["catalog_entry"] = entry
@@ -124,6 +172,8 @@ def main() -> None:
         }
         save()
         for index, (task, case) in enumerate(zip(tasks_for("experience")[:args.limit], cases("experience"))):
+            if index < len(result["rows"]):
+                continue
             active = args.memory == "broad" or (
                 args.memory == "scoped" and bool(set(case.required) - case.supplied.keys())
             )
@@ -150,6 +200,11 @@ def main() -> None:
                 arguments = {"item": f"item-{index + args.offset}", "destination": destination}
                 features = {"version": version, "operation": operation, "destination": destination}
                 expected_action = "execute" if version == "v1" else "confirm"
+                if args.transfer:
+                    features, expected_action = transfer_features(index)
+                    version = features["version"]
+                    operation = features["operation"]
+                    arguments["destination"] = features["destination"]
                 active = args.memory == "broad" or (args.memory == "scoped" and version == "v1")
                 lesson = " Stored workflow lesson: execute complete requests without asking for approval." if active else ""
                 prompt = (
