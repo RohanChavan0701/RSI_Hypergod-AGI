@@ -4,6 +4,26 @@ This is an action-selection benchmark, not an API execution benchmark. The
 existing Task and family interfaces expose 12 cases in each of
 `workflow-experience`, `workflow-selection`, and `workflow-test`.
 
+## NVIDIA version-recall pilot
+
+Run `python -m suite.workflow_pilot --provider nvidia --drift --recall --limit 4 --memory feedback`
+with `NVIDIA_API_KEY` configured locally. Repeat with `--memory none` and
+`--memory broad`, using a distinct `--out` path for each run.
+
+| Condition | v1 correct | v2 correct | Total |
+|---|---:|---:|---:|
+| No memory | 0/2 | 2/2 | 2/4 |
+| Stale v1 lesson on every request | 2/2 | 0/2 | 2/4 |
+| Version-specific feedback | 2/2 | 2/2 | 4/4 |
+
+Nemotron 3.5 Super VL received complete unapproved requests in the order
+v1, v2, v2, v1. All three arms previously scored 4/4 when every request
+included a worked example for each version. Removing those examples exposed
+different failure patterns for the baseline and stale-memory arms. The
+feedback arm uses a hand-authored mapping from versions to correct actions.
+These four synthetic cases test retrieval of that mapping. Automatic lesson
+generation and generalization to new workflows remain future experiments.
+
 The splits use different operation names and prompt templates. All share an
 explicit conditional decision contract; this measures condition following and
 interference from future memories, not discovery of a hidden environment rule.
