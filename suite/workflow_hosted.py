@@ -17,6 +17,11 @@ from suite.workflow_stateful import Request
 MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b"
 ENDPOINT = "https://integrate.api.nvidia.com/v1/chat/completions"
 TASKS = (("v1", "east"), ("v2", None), ("v1", "west"))
+LARGER_TASKS = tuple(
+    (version, destination)
+    for destination in ("north", None, "south", "central", None, "coastal")
+    for version in ("v1", "v2")
+)
 MAX_TURNS = 4
 
 
@@ -87,6 +92,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--suite", choices=("pilot", "larger"), default="pilot")
     args = parser.parse_args()
     load_env()
     key = os.getenv("NVIDIA_API_KEY")
@@ -94,9 +100,10 @@ def main():
         parser.error("Configure NVIDIA_API_KEY locally")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     report = {"model": MODEL, "max_turns": MAX_TURNS, "temperature": 0, "rows": []}
-    schedule = [(index, arm) for index in range(len(TASKS)) for arm in ("stale", "version-aware")]
+    tasks = LARGER_TASKS if args.suite == "larger" else TASKS
+    schedule = [(index, arm) for index in range(len(tasks)) for arm in ("stale", "version-aware")]
     report["schedule"] = [list(pair) for pair in schedule]
-    report["tasks"] = [list(task) for task in TASKS]
+    report["tasks"] = [list(task) for task in tasks]
 
     def save():
         temporary = args.out.with_suffix(args.out.suffix + ".tmp")
@@ -115,7 +122,7 @@ def main():
         elif args.out.exists():
             parser.error("Output already exists. Use --resume or choose a new path.")
         save()
-        for index, (version, destination) in enumerate(TASKS):
+        for index, (version, destination) in enumerate(tasks):
             for arm, memory in (
                 ("stale", " Stored rule: execute once the destination is known."),
                 ("version-aware", " Stored rules: v1 requires only a destination. "

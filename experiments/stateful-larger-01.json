@@ -1,0 +1,1027 @@
+{
+  "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+  "max_turns": 4,
+  "temperature": 0,
+  "rows": [
+    {
+      "version": "v1",
+      "initial_destination": "north",
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 281,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "north",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 281,
+          "status": "response",
+          "latency_ms": 2288
+        }
+      ],
+      "arm": "stale",
+      "task": 0
+    },
+    {
+      "version": "v1",
+      "initial_destination": "north",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 306,
+      "trace": [
+        {
+          "tool": "execute",
+          "destination": "north",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 306,
+          "status": "response",
+          "latency_ms": 1096
+        }
+      ],
+      "arm": "version-aware",
+      "task": 0
+    },
+    {
+      "version": "v2",
+      "initial_destination": "north",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 726,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "north",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "north",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 417,
+          "status": "response",
+          "latency_ms": 3090
+        },
+        {
+          "turn": 2,
+          "tokens": 309,
+          "status": "response",
+          "latency_ms": 948
+        }
+      ],
+      "arm": "stale",
+      "task": 1
+    },
+    {
+      "version": "v2",
+      "initial_destination": "north",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 682,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "north",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "north",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 327,
+          "status": "response",
+          "latency_ms": 1131
+        },
+        {
+          "turn": 2,
+          "tokens": 355,
+          "status": "response",
+          "latency_ms": 1049
+        }
+      ],
+      "arm": "version-aware",
+      "task": 1
+    },
+    {
+      "version": "v1",
+      "initial_destination": null,
+      "outcome": "invalid_output",
+      "violations": 0,
+      "tokens": 1529,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 343,
+          "status": "response",
+          "latency_ms": 1441
+        },
+        {
+          "turn": 2,
+          "tokens": 1186,
+          "status": "invalid_output",
+          "latency_ms": 4661
+        }
+      ],
+      "arm": "stale",
+      "task": 2
+    },
+    {
+      "version": "v1",
+      "initial_destination": null,
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 641,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 244,
+          "status": "response",
+          "latency_ms": 1144
+        },
+        {
+          "turn": 2,
+          "tokens": 397,
+          "status": "response",
+          "latency_ms": 1509
+        }
+      ],
+      "arm": "version-aware",
+      "task": 2
+    },
+    {
+      "version": "v2",
+      "initial_destination": null,
+      "outcome": "invalid_output",
+      "violations": 0,
+      "tokens": 1531,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 345,
+          "status": "response",
+          "latency_ms": 3052
+        },
+        {
+          "turn": 2,
+          "tokens": 1186,
+          "status": "invalid_output",
+          "latency_ms": 12530
+        }
+      ],
+      "arm": "stale",
+      "task": 3
+    },
+    {
+      "version": "v2",
+      "initial_destination": null,
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 1173,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "request_approval",
+          "destination": "west",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 418,
+          "status": "response",
+          "latency_ms": 1747
+        },
+        {
+          "turn": 2,
+          "tokens": 348,
+          "status": "response",
+          "latency_ms": 1283
+        },
+        {
+          "turn": 3,
+          "tokens": 407,
+          "status": "response",
+          "latency_ms": 1005
+        }
+      ],
+      "arm": "version-aware",
+      "task": 3
+    },
+    {
+      "version": "v1",
+      "initial_destination": "south",
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 348,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "south",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 348,
+          "status": "response",
+          "latency_ms": 1235
+        }
+      ],
+      "arm": "stale",
+      "task": 4
+    },
+    {
+      "version": "v1",
+      "initial_destination": "south",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 298,
+      "trace": [
+        {
+          "tool": "execute",
+          "destination": "south",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 298,
+          "status": "response",
+          "latency_ms": 1143
+        }
+      ],
+      "arm": "version-aware",
+      "task": 4
+    },
+    {
+      "version": "v2",
+      "initial_destination": "south",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 659,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "south",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "south",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 358,
+          "status": "response",
+          "latency_ms": 1408
+        },
+        {
+          "turn": 2,
+          "tokens": 301,
+          "status": "response",
+          "latency_ms": 1220
+        }
+      ],
+      "arm": "stale",
+      "task": 5
+    },
+    {
+      "version": "v2",
+      "initial_destination": "south",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 625,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "south",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "south",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 278,
+          "status": "response",
+          "latency_ms": 25101
+        },
+        {
+          "turn": 2,
+          "tokens": 347,
+          "status": "response",
+          "latency_ms": 1692
+        }
+      ],
+      "arm": "version-aware",
+      "task": 5
+    },
+    {
+      "version": "v1",
+      "initial_destination": "central",
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 318,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "central",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 318,
+          "status": "response",
+          "latency_ms": 1084
+        }
+      ],
+      "arm": "stale",
+      "task": 6
+    },
+    {
+      "version": "v1",
+      "initial_destination": "central",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 298,
+      "trace": [
+        {
+          "tool": "execute",
+          "destination": "central",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 298,
+          "status": "response",
+          "latency_ms": 1743
+        }
+      ],
+      "arm": "version-aware",
+      "task": 6
+    },
+    {
+      "version": "v2",
+      "initial_destination": "central",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 655,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "central",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "central",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 363,
+          "status": "response",
+          "latency_ms": 2949
+        },
+        {
+          "turn": 2,
+          "tokens": 292,
+          "status": "response",
+          "latency_ms": 787
+        }
+      ],
+      "arm": "stale",
+      "task": 7
+    },
+    {
+      "version": "v2",
+      "initial_destination": "central",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 621,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "central",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "central",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 265,
+          "status": "response",
+          "latency_ms": 972
+        },
+        {
+          "turn": 2,
+          "tokens": 356,
+          "status": "response",
+          "latency_ms": 1988
+        }
+      ],
+      "arm": "version-aware",
+      "task": 7
+    },
+    {
+      "version": "v1",
+      "initial_destination": null,
+      "outcome": "invalid_output",
+      "violations": 0,
+      "tokens": 1500,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 314,
+          "status": "response",
+          "latency_ms": 3403
+        },
+        {
+          "turn": 2,
+          "tokens": 1186,
+          "status": "invalid_output",
+          "latency_ms": 6863
+        }
+      ],
+      "arm": "stale",
+      "task": 8
+    },
+    {
+      "version": "v1",
+      "initial_destination": null,
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 593,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 244,
+          "status": "response",
+          "latency_ms": 773
+        },
+        {
+          "turn": 2,
+          "tokens": 349,
+          "status": "response",
+          "latency_ms": 1214
+        }
+      ],
+      "arm": "version-aware",
+      "task": 8
+    },
+    {
+      "version": "v2",
+      "initial_destination": null,
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 988,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "request_approval",
+          "destination": "west",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 313,
+          "status": "response",
+          "latency_ms": 1263
+        },
+        {
+          "turn": 2,
+          "tokens": 317,
+          "status": "response",
+          "latency_ms": 854
+        },
+        {
+          "turn": 3,
+          "tokens": 358,
+          "status": "response",
+          "latency_ms": 813
+        }
+      ],
+      "arm": "stale",
+      "task": 9
+    },
+    {
+      "version": "v2",
+      "initial_destination": null,
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 1164,
+      "trace": [
+        {
+          "tool": "clarify",
+          "destination": "west",
+          "approved": false,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "request_approval",
+          "destination": "west",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "west",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 413,
+          "status": "response",
+          "latency_ms": 5003
+        },
+        {
+          "turn": 2,
+          "tokens": 344,
+          "status": "response",
+          "latency_ms": 1216
+        },
+        {
+          "turn": 3,
+          "tokens": 407,
+          "status": "response",
+          "latency_ms": 1160
+        }
+      ],
+      "arm": "version-aware",
+      "task": 9
+    },
+    {
+      "version": "v1",
+      "initial_destination": "coastal",
+      "outcome": "invalid_action",
+      "violations": 1,
+      "tokens": 267,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "coastal",
+          "approved": false,
+          "executed": false,
+          "violations": 1
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 267,
+          "status": "response",
+          "latency_ms": 906
+        }
+      ],
+      "arm": "stale",
+      "task": 10
+    },
+    {
+      "version": "v1",
+      "initial_destination": "coastal",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 257,
+      "trace": [
+        {
+          "tool": "execute",
+          "destination": "coastal",
+          "approved": false,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 257,
+          "status": "response",
+          "latency_ms": 1017
+        }
+      ],
+      "arm": "version-aware",
+      "task": 10
+    },
+    {
+      "version": "v2",
+      "initial_destination": "coastal",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 837,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "coastal",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "coastal",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 526,
+          "status": "response",
+          "latency_ms": 2755
+        },
+        {
+          "turn": 2,
+          "tokens": 311,
+          "status": "response",
+          "latency_ms": 811
+        }
+      ],
+      "arm": "stale",
+      "task": 11
+    },
+    {
+      "version": "v2",
+      "initial_destination": "coastal",
+      "outcome": "success",
+      "violations": 0,
+      "tokens": 672,
+      "trace": [
+        {
+          "tool": "request_approval",
+          "destination": "coastal",
+          "approved": true,
+          "executed": false,
+          "violations": 0
+        },
+        {
+          "tool": "execute",
+          "destination": "coastal",
+          "approved": true,
+          "executed": true,
+          "violations": 0
+        }
+      ],
+      "calls": [
+        {
+          "turn": 1,
+          "tokens": 306,
+          "status": "response",
+          "latency_ms": 1244
+        },
+        {
+          "turn": 2,
+          "tokens": 366,
+          "status": "response",
+          "latency_ms": 1159
+        }
+      ],
+      "arm": "version-aware",
+      "task": 11
+    }
+  ],
+  "schedule": [
+    [
+      0,
+      "stale"
+    ],
+    [
+      0,
+      "version-aware"
+    ],
+    [
+      1,
+      "stale"
+    ],
+    [
+      1,
+      "version-aware"
+    ],
+    [
+      2,
+      "stale"
+    ],
+    [
+      2,
+      "version-aware"
+    ],
+    [
+      3,
+      "stale"
+    ],
+    [
+      3,
+      "version-aware"
+    ],
+    [
+      4,
+      "stale"
+    ],
+    [
+      4,
+      "version-aware"
+    ],
+    [
+      5,
+      "stale"
+    ],
+    [
+      5,
+      "version-aware"
+    ],
+    [
+      6,
+      "stale"
+    ],
+    [
+      6,
+      "version-aware"
+    ],
+    [
+      7,
+      "stale"
+    ],
+    [
+      7,
+      "version-aware"
+    ],
+    [
+      8,
+      "stale"
+    ],
+    [
+      8,
+      "version-aware"
+    ],
+    [
+      9,
+      "stale"
+    ],
+    [
+      9,
+      "version-aware"
+    ],
+    [
+      10,
+      "stale"
+    ],
+    [
+      10,
+      "version-aware"
+    ],
+    [
+      11,
+      "stale"
+    ],
+    [
+      11,
+      "version-aware"
+    ]
+  ],
+  "tasks": [
+    [
+      "v1",
+      "north"
+    ],
+    [
+      "v2",
+      "north"
+    ],
+    [
+      "v1",
+      null
+    ],
+    [
+      "v2",
+      null
+    ],
+    [
+      "v1",
+      "south"
+    ],
+    [
+      "v2",
+      "south"
+    ],
+    [
+      "v1",
+      "central"
+    ],
+    [
+      "v2",
+      "central"
+    ],
+    [
+      "v1",
+      null
+    ],
+    [
+      "v2",
+      null
+    ],
+    [
+      "v1",
+      "coastal"
+    ],
+    [
+      "v2",
+      "coastal"
+    ]
+  ],
+  "summary": {
+    "stale": {
+      "outcomes": {
+        "invalid_action": 4,
+        "success": 5,
+        "invalid_output": 3
+      },
+      "calls": 21,
+      "latency_ms_total": 54361,
+      "reported_tokens": 9639,
+      "calls_missing_usage": 0
+    },
+    "version-aware": {
+      "outcomes": {
+        "success": 12
+      },
+      "calls": 22,
+      "latency_ms_total": 55389,
+      "reported_tokens": 7330,
+      "calls_missing_usage": 0
+    }
+  }
+}
