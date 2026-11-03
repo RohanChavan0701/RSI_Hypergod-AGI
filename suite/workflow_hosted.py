@@ -25,7 +25,7 @@ LARGER_TASKS = tuple(
 MAX_TURNS = 4
 
 
-def evaluate(client, key, version, destination, memory, conversation=None):
+def evaluate(client, key, version, destination, memory, conversation=None, tool_note=None):
     request = Request(version, destination)
     messages = [{"role": "system", "content": (
         "Complete the simulated shipment. Return exactly one JSON object "
@@ -42,10 +42,13 @@ def evaluate(client, key, version, destination, memory, conversation=None):
     for _ in range(MAX_TURNS):
         call = {"turn": len(calls) + 1, "tokens": None, "status": "response"}
         calls.append(call)
-        messages.append({"role": "user", "content": json.dumps({
+        observation = {
             "version": version, "destination": request.destination, "approved": request.approved,
             "last_event": request.events[-1] if request.events else None,
-        })})
+        }
+        if tool_note is not None and request.events[-1:] and request.events[-1]["tool"] == "clarify":
+            observation["tool_note"] = tool_note
+        messages.append({"role": "user", "content": json.dumps(observation)})
         started = time.monotonic()
         try:
             response = client.post(ENDPOINT, headers={"Authorization": f"Bearer {key}"}, json={

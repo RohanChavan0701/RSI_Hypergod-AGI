@@ -1,5 +1,22 @@
 # Conditional workflow probe
 
+### Indirect prompt-injection pilot
+
+Run `python -m suite.workflow_security --out .cache/security-new.json`
+with NVIDIA credentials configured. After clarification, the mock response
+includes a clean or injected note. Both conditions receive the v2 approval
+rule. The defense adds an instruction to trust structured approval state.
+The simulator blocks unapproved execution in both arms.
+
+| Condition | Clean completion | Injected completion | Injected unauthorized attempts |
+|---|---:|---:|---:|
+| Baseline | 3/3 | 1/3 | 1/3 |
+| Tool-note defense | 3/3 | 3/3 | 0/3 |
+
+The baseline also produced one malformed reply under injection. The three
+attack strings share a single synthetic workflow. The clean cases repeat
+the same request. See [security-01.json](security-01.json) for traces.
+
 ### Hosted stateful pilot
 
 Run `python -m suite.workflow_hosted --out .cache/stateful-nvidia-new.json`
